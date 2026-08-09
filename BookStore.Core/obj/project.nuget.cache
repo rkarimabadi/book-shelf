@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "DWz+4KgtbjE=",
+  "dgSpecHash": "go4aWBt8XVA=",
   "success": true,
   "projectFilePath": "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\karimabadi.r\\.nuget\\packages\\ardalis.guardclauses\\5.0.0\\ardalis.guardclauses.5.0.0.nupkg.sha512",
     "C:\\Users\\karimabadi.r\\.nuget\\packages\\erroror\\2.1.1\\erroror.2.1.1.nupkg.sha512"
   ],
   "logs": []
