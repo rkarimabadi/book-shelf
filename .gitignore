@@ -21,3 +21,4 @@ wwwroot/uploads/
 .vs/
 .vscode/
 .idea/
+/book/.obsidian/workspace.json
