@@ -19,6 +19,9 @@ public class User : AggregateRoot
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
+    private readonly List<LibraryEntry> _libraryEntries = new();
+    public IReadOnlyCollection<LibraryEntry> LibraryEntries => _libraryEntries.AsReadOnly();
+
     private User() { }
 
     public static ErrorOr<User> Create(
@@ -102,6 +105,40 @@ public class User : AggregateRoot
         _refreshTokens.Add(refreshToken.Value);
 
         AddDomainEvent(new RefreshTokenAddedEvent(Id, token, expiresAt));
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> AddToLibrary(Guid bookId)
+    {
+        Guard.Against.Default(bookId, nameof(bookId));
+
+        if (_libraryEntries.Any(entry => entry.BookId == bookId))
+        {
+            return UserErrors.Validation.BookAlreadyInLibrary(bookId);
+        }
+
+        var libraryEntry = LibraryEntry.Create(bookId);
+        _libraryEntries.Add(libraryEntry.Value);
+
+        AddDomainEvent(new BookAddedToLibraryEvent(Id, bookId));
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> RemoveFromLibrary(Guid bookId)
+    {
+        Guard.Against.Default(bookId, nameof(bookId));
+
+        var libraryEntry = _libraryEntries.FirstOrDefault(entry => entry.BookId == bookId);
+        if (libraryEntry is null)
+        {
+            return UserErrors.Validation.BookNotInLibrary(bookId);
+        }
+
+        _libraryEntries.Remove(libraryEntry);
+
+        AddDomainEvent(new BookRemovedFromLibraryEvent(Id, bookId));
 
         return Result.Success;
     }

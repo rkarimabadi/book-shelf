@@ -26,5 +26,11 @@ public static class UserErrors
 
         public static Error RefreshTokenRevoked =>
             Error.Unauthorized("User.RefreshTokenRevoked", "Refresh token has been revoked.");
+
+        public static Error BookAlreadyInLibrary(Guid bookId) =>
+            Error.Conflict("User.BookAlreadyInLibrary", $"Book '{bookId}' is already in the user's library.");
+
+        public static Error BookNotInLibrary(Guid bookId) =>
+            Error.NotFound("User.BookNotInLibrary", $"Book '{bookId}' is not in the user's library.");
     }
 }

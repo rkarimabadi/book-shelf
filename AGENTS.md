@@ -194,7 +194,7 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 
 ### Registration
 - `DependencyInjection.AddApplication()` registers MediatR, FluentValidation validators, and `ValidationBehavior`
-- Currently implemented: `Features/Authentication/` (Register, Login, RefreshToken, Logout commands) and `Features/Books/` (Create/Update/Delete commands, Get/GetAll queries)
+- Currently implemented: `Features/Authentication/` (Register, Login, RefreshToken, Logout commands), `Features/Books/` (Create/Update/Delete commands, Get/GetAll queries), `Features/Library/` (Add/Remove commands, GetUserLibrary query)
 
 ## Authentication Status (as of current session)
 
@@ -213,16 +213,25 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **API:** `BooksController` — GET public list/detail; POST/PUT/DELETE protected by `RequireAdminRole` policy; multipart upload (cover image + book file)
 - Verified by manual smoke test: CRUD + auth checks (403 for non-admin, 404 after delete)
 
+## User Library Status
+
+- **Domain (Core):** `LibraryEntry` entity + `User.AddToLibrary` / `User.RemoveFromLibrary` (guards: duplicate add → `Conflict`, missing book → `NotFound`), `BookAddedToLibraryEvent` / `BookRemovedFromLibraryEvent`
+- **Application:** `Features/Library/` — AddBookToLibrary/RemoveBookFromLibrary commands, GetUserLibrary query
+- **Infrastructure:** `LibraryEntryConfiguration` (FK cascade on User + Book), `AddLibraryEntries` migration, `UserRepository.GetLibraryBooksAsync` (join returns book + AddedAt, ordered newest-first), `IsBookInLibraryAsync`
+- **API:** `LibraryController` — `GET /api/library`, `POST /api/library` (body `{ bookId }`), `DELETE /api/library/{bookId}`; all `[Authorize]`, userId from JWT `sub` claim
+- Verified by manual smoke test: 401 anonymous, 409 duplicate add, 404 missing book, per-user isolation, remove → 404 on re-remove
+
 ## Known Pitfalls (learned via smoke tests)
 
 1. **EF treats client-generated Guid keys as existing rows.** `Entity.Id = Guid.NewGuid()` is non-default, so when a new child (e.g. `RefreshToken`) is added to a tracked aggregate, EF marks it `Modified` → `UPDATE` affects 0 rows → `DbUpdateConcurrencyException`. Fix: in `UserRepository.Update`, snapshot tracked children with `AutoDetectChangesEnabled = false` first, then set untracked ones to `EntityState.Added`.
 2. **PBKDF2 hashes are salted; never compare hash strings directly.** `HashPassword` returns a different string each call, so `user.PasswordHash != passwordHash` always fails. Verify via `IPasswordHasher.VerifyPassword(password, storedHash)` in the handler, then pass the stored hash to the domain service.
 3. **JWT inbound claims are remapped by default.** `JwtSecurityTokenHandler` maps `sub`/`email` to `ClaimTypes.*`, so `FindFirstValue(JwtRegisteredClaimNames.Sub)` returns null. Fix: `options.MapInboundClaims = false` on the JwtBearer options.
+4. **EF Core 9 `PendingModelChangesWarning` at runtime.** If `Database.Migrate()` throws "model has pending changes" even though `dotnet ef migrations has-pending-model-changes` says clean, the migration snapshot is stale — run `dotnet ef migrations remove` then `dotnet ef migrations add <Name>` again.
 
 ## Next Steps
 
 1. Build API endpoints (controllers, JWT validation) — DONE
-2. Implement user library management (add to library, list user's books)
+2. Implement user library management (add to library, list user's books) — DONE
 3. Create book management domain entities — DONE
 4. Add validation and error handling (API-level) — DONE
 

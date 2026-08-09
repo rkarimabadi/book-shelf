@@ -80,6 +80,28 @@ public class RefreshTokenRevokedEvent : UserDomainEvent
     }
 }
 
+public class BookAddedToLibraryEvent : UserDomainEvent
+{
+    public Guid BookId { get; }
+
+    public BookAddedToLibraryEvent(Guid userId, Guid bookId)
+        : base(userId)
+    {
+        BookId = bookId;
+    }
+}
+
+public class BookRemovedFromLibraryEvent : UserDomainEvent
+{
+    public Guid BookId { get; }
+
+    public BookRemovedFromLibraryEvent(Guid userId, Guid bookId)
+        : base(userId)
+    {
+        BookId = bookId;
+    }
+}
+
 public class UserDeactivatedEvent : UserDomainEvent
 {
     public string Email { get; }

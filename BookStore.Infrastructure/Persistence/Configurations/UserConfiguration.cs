@@ -49,5 +49,14 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey("UserId")
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Metadata.FindNavigation(nameof(User.LibraryEntries))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(u => u.LibraryEntries)
+            .WithOne()
+            .HasForeignKey("UserId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
