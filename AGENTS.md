@@ -185,7 +185,7 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 
 ### Contracts (Dependency Inversion)
 - External needs (repos, email, tokens, clock) are interfaces defined in Application:
-  - `IUserRepository`, `IEmailService`, `IDateTimeProvider`, `IJwtTokenGenerator`, `IPasswordHasher`
+  - `IUserRepository`, `IBookRepository`, `IEmailService`, `IDateTimeProvider`, `IJwtTokenGenerator`, `IPasswordHasher`, `IFileStorage`
 - Implementations live in Infrastructure
 
 ### Security
@@ -211,11 +211,18 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **Application:** `Features/Books/` — CreateBook/UpdateBook/DeleteBook commands + validators + handlers, GetBook/GetBooks queries
 - **Infrastructure:** `BookRepository`, `BookConfiguration`, `LocalFileStorage` (wwwroot/uploads, subdirs covers/books, `FileStorage` config section), `AddBooks` migration
 - **API:** `BooksController` — GET public list/detail; POST/PUT/DELETE protected by `RequireAdminRole` policy; multipart upload (cover image + book file)
+- Verified by manual smoke test: CRUD + auth checks (403 for non-admin, 404 after delete)
+
+## Known Pitfalls (learned via smoke tests)
+
+1. **EF treats client-generated Guid keys as existing rows.** `Entity.Id = Guid.NewGuid()` is non-default, so when a new child (e.g. `RefreshToken`) is added to a tracked aggregate, EF marks it `Modified` → `UPDATE` affects 0 rows → `DbUpdateConcurrencyException`. Fix: in `UserRepository.Update`, snapshot tracked children with `AutoDetectChangesEnabled = false` first, then set untracked ones to `EntityState.Added`.
+2. **PBKDF2 hashes are salted; never compare hash strings directly.** `HashPassword` returns a different string each call, so `user.PasswordHash != passwordHash` always fails. Verify via `IPasswordHasher.VerifyPassword(password, storedHash)` in the handler, then pass the stored hash to the domain service.
+3. **JWT inbound claims are remapped by default.** `JwtSecurityTokenHandler` maps `sub`/`email` to `ClaimTypes.*`, so `FindFirstValue(JwtRegisteredClaimNames.Sub)` returns null. Fix: `options.MapInboundClaims = false` on the JwtBearer options.
 
 ## Next Steps
 
 1. Build API endpoints (controllers, JWT validation) — DONE
-2. Implement user library management
+2. Implement user library management (add to library, list user's books)
 3. Create book management domain entities — DONE
 4. Add validation and error handling (API-level) — DONE
 
