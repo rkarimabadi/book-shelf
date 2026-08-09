@@ -1,6 +1,6 @@
-### 📄 سند دستورالعمل پیاده‌سازی لایه ارائه (Presentation Layer Implementation Guidelines)
+### سند دستورالعمل پیاده‌سازی لایه ارائه (Presentation Layer Implementation Guidelines)
 **هدف:** مدیریت درخواست‌های HTTP، اعتبارسنجی ساختاری، هدایت درخواست‌ها به لایه Application و بازگرداندن پاسخ‌های استاندارد (مانند Problem Details) بدون درگیری با منطق اصلی سیستم.
-لطفاً در توسعه کنترلرها (Controllers) و پیکربندی پروژه API، قوانین زیر را به دقت رعایت کنید:
+در توسعه کنترلرها (Controllers) و پیکربندی پروژه API، قوانین زیر را به دقت رعایت کنید:
 #### ۱. جداسازی پروژه قراردادها (Contracts Project)
  * **پروژه مستقل:** تعریف مدل‌های ورودی و خروجی (Requests & Responses) نباید در داخل پروژه API یا Application باشد. یک پروژه مجزا به نام Contracts (یا Shared) ایجاد کنید.
  * **رکوردهای سی‌شارپ:** از record به جای class برای تعریف Requestها و Responseها در این پروژه استفاده کنید تا Immutability (تغییرناپذیری) حفظ شود.
