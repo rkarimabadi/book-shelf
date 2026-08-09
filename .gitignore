@@ -1,0 +1,20 @@
+# Build results
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+*.err.log
+
+# IDE
+.vs/
+.vscode/
+.idea/
