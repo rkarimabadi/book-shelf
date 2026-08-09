@@ -1,3 +1,4 @@
+using BookStore.Core.Domain.Books;
 using BookStore.Core.Domain.Users;
 using BookStore.Infrastructure.Persistence.Configurations;
 using BookStore.Infrastructure.Persistence.Interceptors;
@@ -18,6 +19,7 @@ public sealed class BookStoreDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Book> Books => Set<Book>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

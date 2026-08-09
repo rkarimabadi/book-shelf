@@ -66,6 +66,19 @@ The solution follows Clean Architecture principles with Domain-Driven Design:
 ### Repositories
 - `IUserRepository.cs` - User data access contract
 
+### Book (Aggregate Root)
+- `Book.cs` - Book entity with content management logic (Create/UpdateDetails/Delete)
+- `BookDomainEvents.cs` - Book domain events (created, updated, deleted)
+- `BookErrors.cs` - Book error catalog
+
+### Repositories
+- `IBookRepository.cs` - Book data access contract
+
+### File Storage
+- `IFileStorage.cs` (Application contract) - Save/Delete/GetFullPath for uploaded files
+- `LocalFileStorage.cs` (Infrastructure) - writes to `wwwroot/uploads/` (subdirs `covers/`, `books/`), configured via `FileStorage` section
+
+
 ## Technology Stack
 
 ### Backend
@@ -181,7 +194,7 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 
 ### Registration
 - `DependencyInjection.AddApplication()` registers MediatR, FluentValidation validators, and `ValidationBehavior`
-- Currently implemented: `Features/Authentication/` (Register, Login, RefreshToken, Logout commands)
+- Currently implemented: `Features/Authentication/` (Register, Login, RefreshToken, Logout commands) and `Features/Books/` (Create/Update/Delete commands, Get/GetAll queries)
 
 ## Authentication Status (as of current session)
 
@@ -190,14 +203,21 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
   - Custom guard `GuardClauseExtensions.ExpiresInPast` in `Core/Domain/Common/`
 - **Application:** Register/Login/RefreshToken/Logout commands with validators + handlers, `ValidationBehavior`, DI registration — complete and compiling
 - **Infrastructure:** EF Core 9 + SQLite (`BookStoreDbContext`, Fluent API configurations), `UserRepository`, `JwtTokenGenerator`, `PasswordHasher` (PBKDF2), `DateTimeProvider`, `JwtSettings` (Options + validation), Outbox pattern (`PublishDomainEventsInterceptor` + `ProcessOutboxMessagesJob` via Quartz.NET), `AddInfrastructure()` DI registration — complete and compiling
-- **API:** NOT yet implemented (next step)
+- **API:** AuthController (register/login/refresh/logout/me), JWT validation with `MapInboundClaims = false`, `ApiController` ProblemDetails base — complete and verified
+
+## Book Content Management Status
+
+- **Domain (Core):** `Book` aggregate complete (Create/UpdateDetails/Delete, domain events)
+- **Application:** `Features/Books/` — CreateBook/UpdateBook/DeleteBook commands + validators + handlers, GetBook/GetBooks queries
+- **Infrastructure:** `BookRepository`, `BookConfiguration`, `LocalFileStorage` (wwwroot/uploads, subdirs covers/books, `FileStorage` config section), `AddBooks` migration
+- **API:** `BooksController` — GET public list/detail; POST/PUT/DELETE protected by `RequireAdminRole` policy; multipart upload (cover image + book file)
 
 ## Next Steps
 
-1. Build API endpoints (controllers, JWT validation)
+1. Build API endpoints (controllers, JWT validation) — DONE
 2. Implement user library management
-3. Create book management domain entities
-4. Add validation and error handling (API-level)
+3. Create book management domain entities — DONE
+4. Add validation and error handling (API-level) — DONE
 
 ### Migrations
 

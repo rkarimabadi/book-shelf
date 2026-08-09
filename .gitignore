@@ -10,6 +10,9 @@ obj/
 *.db-shm
 *.db-wal
 
+# Uploaded content
+wwwroot/uploads/
+
 # Logs
 *.log
 *.err.log

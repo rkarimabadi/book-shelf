@@ -1,0 +1,99 @@
+using Ardalis.GuardClauses;
+using BookStore.Core.Domain.Common;
+using ErrorOr;
+
+namespace BookStore.Core.Domain.Books;
+
+public class Book : AggregateRoot
+{
+    public string Title { get; private set; }
+    public string Author { get; private set; }
+    public string Description { get; private set; }
+    public string CoverImagePath { get; private set; }
+    public string FilePath { get; private set; }
+    public DateTime CreatedAt { get; private init; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
+
+    private Book() { }
+
+    public static ErrorOr<Book> Create(
+        string title,
+        string author,
+        string description,
+        string coverImagePath,
+        string filePath)
+    {
+        var errors = new List<Error>();
+
+        Guard.Against.NullOrEmpty(title, nameof(title));
+        Guard.Against.NullOrEmpty(author, nameof(author));
+        Guard.Against.NullOrEmpty(filePath, nameof(filePath));
+
+        if (title.Length > 200)
+        {
+            errors.Add(Error.Validation("Book.TitleTooLong", "Title must not exceed 200 characters."));
+        }
+
+        if (author.Length > 100)
+        {
+            errors.Add(Error.Validation("Book.AuthorTooLong", "Author must not exceed 100 characters."));
+        }
+
+        if (errors.Any())
+        {
+            return errors;
+        }
+
+        var book = new Book
+        {
+            Title = title,
+            Author = author,
+            Description = description ?? string.Empty,
+            CoverImagePath = coverImagePath ?? string.Empty,
+            FilePath = filePath
+        };
+
+        book.AddDomainEvent(new BookCreatedEvent(book.Id, title, author));
+
+        return book;
+    }
+
+    public ErrorOr<Success> UpdateDetails(
+        string title,
+        string author,
+        string description,
+        string? coverImagePath,
+        string? filePath)
+    {
+        Guard.Against.NullOrEmpty(title, nameof(title));
+        Guard.Against.NullOrEmpty(author, nameof(author));
+
+        var oldTitle = Title;
+        var oldAuthor = Author;
+
+        Title = title;
+        Author = author;
+        Description = description ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(coverImagePath))
+        {
+            CoverImagePath = coverImagePath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(filePath))
+        {
+            FilePath = filePath;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new BookUpdatedEvent(Id, oldTitle, oldAuthor, title, author));
+
+        return Result.Success;
+    }
+
+    public void Delete()
+    {
+        AddDomainEvent(new BookDeletedEvent(Id, Title));
+    }
+}
