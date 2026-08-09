@@ -119,9 +119,8 @@ The solution follows Clean Architecture principles with Domain-Driven Design:
 
 ## Testing Strategy
 
-- Domain tests in `BookStore.Core.Tests/`
-- Use FluentAssertions for assertions
-- Test business logic, invariants, and edge cases
+- No test projects in this solution (removed)
+- Verify changes by building (`dotnet build`) and running the API smoke tests manually
 
 ## Common Patterns
 
@@ -206,5 +205,6 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - Run from solution root:
   - `dotnet ef migrations add <Name> --project BookStore.Infrastructure --startup-project BookStore.Infrastructure`
   - `dotnet ef database update --project BookStore.Infrastructure --startup-project BookStore.Infrastructure`
-- `bookstore.db` is created in `BookStore.Infrastructure/` (dev only, not for source control)
+- `bookstore.db` is created in `BookStore.Api/` at runtime (dev only, not for source control)
+- The design-time factory (`--startup-project BookStore.Infrastructure`) creates a separate throwaway DB next to it — delete it after use; only the `BookStore.Api/` instance is needed
 - EF Core pinned to 9.x (v10 targets net10.0); tool: `dotnet-ef` 9.0.18 (global)
