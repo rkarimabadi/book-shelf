@@ -28,3 +28,4 @@ appsettings.Production.json
 /.obsidian/workspace.json
 /publish
 /BookStore.Api/wwwroot/uploads
+/BookStore-publish.zip
