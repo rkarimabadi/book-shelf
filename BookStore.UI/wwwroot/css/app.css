@@ -234,3 +234,6 @@ code {
     text-align: center;
     color: var(--label-secondary);
 }
+.book-card {
+    text-decoration: none !important;
+}

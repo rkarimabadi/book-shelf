@@ -37,10 +37,19 @@ else
             <div class="details-actions">
                 @if (!string.IsNullOrWhiteSpace(_book.FilePath))
                 {
-                    <a class="book-action book-action-download"
-                       href="@IBookService.MediaUrl(_book.FilePath)"
-                       target="_blank"
-                       rel="noopener">دانلود کتاب</a>
+                    if (_isAuthenticated)
+                    {
+                        <button type="button" class="book-action book-action-download"
+                                disabled="@_isDownloading"
+                                @onclick="OnDownloadClick">
+                            @(_isDownloading ? "در حال دانلود..." : "دانلود کتاب")
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="book-action book-action-download"
+                                @onclick="QueueDownloadAndRedirectToLogin">دانلود کتاب</button>
+                    }
                 }
 
                 @if (_isAuthenticated)
@@ -79,6 +88,7 @@ else
 
 @code {
     private const string PendingAddKey = "pending_add_book";
+    private const string PendingDownloadKey = "pending_download_book";
 
     [Parameter]
     public Guid Id { get; set; }
@@ -95,11 +105,15 @@ else
     [Inject]
     private NavigationManager Nav { get; set; } = default!;
 
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
     private BookResponse? _book;
     private bool _error;
     private bool _isAuthenticated;
     private bool _isInLibrary;
     private bool _isBusy;
+    private bool _isDownloading;
     private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
@@ -107,6 +121,7 @@ else
         await LoadBookAsync();
         await LoadAuthStateAsync();
         await ProcessPendingAddAsync();
+        await ProcessPendingDownloadAsync();
     }
 
     private async Task LoadBookAsync()
@@ -151,6 +166,31 @@ else
         await AddToLibraryAsync(fromPending: true);
     }
 
+    private async Task ProcessPendingDownloadAsync()
+    {
+        if (!_isAuthenticated)
+        {
+            return;
+        }
+
+        var pending = await Storage.GetItemAsync<string>(PendingDownloadKey);
+        if (!Guid.TryParse(pending, out var pendingId))
+        {
+            await Storage.RemoveItemAsync(PendingDownloadKey);
+            return;
+        }
+
+        // Pending download belongs to another book (e.g. user abandoned the login round-trip).
+        if (pendingId != Id)
+        {
+            await Storage.RemoveItemAsync(PendingDownloadKey);
+            return;
+        }
+
+        await Storage.RemoveItemAsync(PendingDownloadKey);
+        await DownloadAsync(fromPending: true);
+    }
+
     private Task OnAddClick() => AddToLibraryAsync(fromPending: false);
 
     private async Task QueueAddAndRedirectToLogin()
@@ -158,6 +198,71 @@ else
         await Storage.SetItemAsync(PendingAddKey, Id.ToString());
         var returnUrl = Uri.EscapeDataString($"/books/{Id}");
         Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
+
+    private Task OnDownloadClick() => DownloadAsync(fromPending: false);
+
+    private async Task QueueDownloadAndRedirectToLogin()
+    {
+        await Storage.SetItemAsync(PendingDownloadKey, Id.ToString());
+        var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+        Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
+
+    private async Task DownloadAsync(bool fromPending = false)
+    {
+        if (_isDownloading)
+        {
+            return;
+        }
+
+        _isDownloading = true;
+        _notice = null;
+        try
+        {
+            var result = await BookService.DownloadBookAsync(Id);
+
+            if (result.Unauthorized && !fromPending)
+            {
+                await Storage.SetItemAsync(PendingDownloadKey, Id.ToString());
+                var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Unauthorized)
+            {
+                // Post-login auto-download still rejected; surface the error instead of bouncing to login again.
+                _notice = (result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", true);
+                return;
+            }
+
+            if (!result.Success)
+            {
+                _notice = (result.Message ?? "دانلود کتاب ناموفق بود.", true);
+                return;
+            }
+
+            await JS.InvokeVoidAsync("bookstoreDownload", result.Content!, DisplayFileName(_book?.FilePath));
+            _notice = ("دانلود شروع شد.", false);
+        }
+        finally
+        {
+            _isDownloading = false;
+        }
+    }
+
+    private static string DisplayFileName(string? filePath)
+    {
+        var name = Path.GetFileName(filePath?.TrimEnd('/') ?? string.Empty);
+
+        // Stored names look like "<32-hex>_<original name>"; strip the server-generated prefix.
+        if (name.Length > 33 && name[32] == '_')
+        {
+            name = name[33..];
+        }
+
+        return string.IsNullOrWhiteSpace(name) ? "book.epub" : name;
     }
 
     private async Task AddToLibraryAsync(bool fromPending = false)

@@ -250,6 +250,14 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **DI:** `AddScoped<IClientStorageService>` + HttpClient factory (with auth handler) + `AddScoped<IBookService>` in `BookStore.UI/Program.cs`
 - Verified via browser smoke test: list + details render, anonymous→login→auto-add E2E, 409/401 handled gracefully
 
+## Download Gating Status
+
+- **Requirement (MVP — مسیرهای شرطی):** unregistered viewers must not download book files; an anonymous click on «دانلود کتاب» redirects to login and auto-downloads after successful auth — mirrors the add-to-library flow
+- **Server — protected endpoint:** `GET /api/books/{id}/download` (`[Authorize]`, any authenticated user incl. admins) in `BooksController`: fetches the book, resolves the file via `IFileStorage.GetFullPath` **rooted with `IWebHostEnvironment.ContentRootPath`** (see pitfall 13), 404 `Book.FileMissing` when absent, returns `PhysicalFile` as `application/epub+zip` with `Content-Disposition: attachment`
+- **Server — static protection:** `Program.cs` — `UseStaticFiles()` moved **after** `UseAuthentication()`; a `UseWhen("/uploads/books")` branch denies anonymous requests with 401 (covers at `/uploads/covers` stay public)
+- **UI:** `BookDetails.razor` — anonymous sees a «دانلود کتاب» button that stores `pending_download_book` in localStorage and redirects to `/login?returnUrl=/books/{id}`; after login `ProcessPendingDownloadAsync` (same round-trip/abandonment guards as the add flow) auto-triggers the download; authenticated users download via `BookService.DownloadBookAsync` (fetch bytes over the authenticated HttpClient) and `window.bookstoreDownload` JS helper in `index.html` saves the blob; the display filename strips the server's `<32-hex>_` prefix from `FilePath` (`DisplayFileName`)
+- Verified via API smoke test: anon direct file 401, anon endpoint 401, authed endpoint 200 (correct content-type/filename), authed direct access to a known static type (`.txt`) 200 while anon is 401
+
 ## Admin Content Management UI Status
 
 - **Pages:** `Features/Admin/Pages/AdminBooks.razor` (`/admin` — book list with cover thumb, ویرایش/حذف actions, empty/loading/error states, ConfirmDialog on delete + success notice), `AdminBookAdd.razor` (`/admin/add`), `AdminBookEdit.razor` (`/admin/edit/{id:guid}`)
@@ -272,6 +280,8 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 9. **A `DelegatingHandler` handed to `new HttpClient(handler)` needs `InnerHandler` assigned** (e.g. `InnerHandler = new HttpClientHandler()`), otherwise every request throws `InvalidOperationException: The inner handler has not been assigned.` Also: don't register one handler instance and share it across several HttpClients — each HttpClient should own its private chain (create it in the HttpClient factory).
 10. **Login `returnUrl` values must start with `/`.** `Login.razor` only honors `ReturnUrl` when it `StartsWith('/')`, so building one from `NavigationManager.ToBaseRelativePath` (which yields `admin`, no leading slash) silently sends the user home after login. Fix: prefix `"/"` before escaping (`Uri.EscapeDataString("/" + relativePath.TrimStart('/'))`).
 11. **Blazor reuses a page instance when navigating between two URLs that match the same route template** (e.g. `/admin/edit/A` → `/admin/edit/B`), so `OnInitializedAsync` never re-runs and the page shows stale data. Fix: reload in `OnParametersSetAsync` keyed on a last-seen id (`if (Id != _loadedId) { _loadedId = Id; ... }`); child components with prefill state need the same id-guard (see `BookForm._prefilledForId`).
+12. **Static files cannot serve `.epub` (or any extension missing from `FileExtensionContentTypeProvider`).** `StaticFileMiddleware` returns 404 for unknown types because `ServeUnknownFileTypes` defaults to `false` — so the original `<a href="/uploads/books/...">` download link never actually worked. The protected download endpoint is therefore the only delivery path for book files; the `/uploads/books` auth-branch still matters for known types (e.g. `.txt` book files).
+13. **`PhysicalFile` requires a rooted path.** `IFileStorage.GetFullPath` returns a web-relative path (`wwwroot/uploads/...`); combine it with `IWebHostEnvironment.ContentRootPath` (`Path.GetFullPath(relPath, contentRoot)`) before passing it to `PhysicalFile`, or the request throws `NotSupportedException: path was not rooted`.
 
 ## MVP Status
 
@@ -281,7 +291,7 @@ All MUST-HAVE items from `book/MVP Scope Document.md` are implemented and verifi
 - **کتابها (عمومی)** — Home + books list + book details (با دانلود و افزودن به کتابخانه) — DONE (`Home.razor`, `BooksList.razor`, `BookDetails.razor`)
 - **کتابخانهٔ کاربر** — افزودن به کتابخانه + لیست کتابهای کاربر — DONE (`BookDetails.razor`, `MyLibrary.razor`)
 - **مدیریت محتوا (ادمین)** — افزودن/ویرایش/حذف کتاب — DONE (`AdminBooks.razor`, `AdminBookAdd.razor`, `AdminBookEdit.razor`)
-- **مسیرهای شرطی** — هدایت هوشمند ناشناس (anonymous → login → auto-add) — DONE (`BookDetails.razor` pending-add flow)
+- **مسیرهای شرطی** — هدایت هوشمند ناشناس (anonymous → login → auto-add / auto-download) — DONE (`BookDetails.razor` pending-add + pending-download flows)
 
 ## Next Steps (SHOULD HAVE candidates)
 

@@ -17,11 +17,13 @@ public sealed class BooksController : ApiController
 {
     private readonly ISender _sender;
     private readonly IFileStorage _fileStorage;
+    private readonly IWebHostEnvironment _env;
 
-    public BooksController(ISender sender, IFileStorage fileStorage)
+    public BooksController(ISender sender, IFileStorage fileStorage, IWebHostEnvironment env)
     {
         _sender = sender;
         _fileStorage = fileStorage;
+        _env = env;
     }
 
     [HttpGet]
@@ -58,6 +60,31 @@ public sealed class BooksController : ApiController
                 book.CreatedAt,
                 book.UpdatedAt)),
             errors => Problem(errors));
+    }
+
+    [HttpGet("{id:guid}/download")]
+    [Authorize]
+    public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetBookQuery(id), cancellationToken);
+        if (result.IsError)
+        {
+            return Problem(result.Errors);
+        }
+
+        var book = result.Value;
+        if (string.IsNullOrWhiteSpace(book.FilePath))
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Book file is missing.", detail: "Book.FileMissing");
+        }
+
+        var fullPath = Path.GetFullPath(_fileStorage.GetFullPath(book.FilePath), _env.ContentRootPath);
+        if (!System.IO.File.Exists(fullPath))
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Book file is missing.", detail: "Book.FileMissing");
+        }
+
+        return PhysicalFile(fullPath, "application/epub+zip", Path.GetFileName(book.FilePath));
     }
 
     [HttpPost]

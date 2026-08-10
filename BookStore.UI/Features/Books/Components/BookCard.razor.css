@@ -1,3 +1,6 @@
+::deep a {
+    text-decoration: none!important;
+}
 .book-card {
     display: flex;
     flex-direction: column;
@@ -7,7 +10,7 @@
     border: 1px solid var(--separator);
     border-radius: var(--radius-md);
     color: var(--label);
-    text-decoration: none;
+
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
@@ -48,6 +51,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.details-cover {
+    max-width: 18rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--fill);
 }
 
 /* skeleton shimmer */

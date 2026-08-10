@@ -97,6 +97,32 @@ public sealed class BookService : IBookService
         }
     }
 
+    public async Task<DownloadResult> DownloadBookAsync(Guid bookId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.GetAsync($"api/books/{bookId}/download", cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                return new DownloadResult(true, content, null);
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new DownloadResult(false, null, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
+            }
+
+            var message = await ReadProblemMessageAsync(response);
+            return new DownloadResult(false, null, message);
+        }
+        catch
+        {
+            return new DownloadResult(false, null, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
     private static async Task<string> ReadProblemMessageAsync(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync();

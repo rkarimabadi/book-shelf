@@ -59,9 +59,26 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 
 app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
 
 app.UseAuthentication();
+
+// Book files are served through the authenticated download endpoint; deny anonymous direct access.
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/uploads/books"), appBuilder =>
+{
+    appBuilder.Use(async (context, next) =>
+    {
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        await next();
+    });
+});
+
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();
