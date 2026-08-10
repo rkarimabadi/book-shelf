@@ -1,0 +1,123 @@
+.details-cover {
+    max-width: 18rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    background: var(--fill);
+}
+
+.details-title {
+    font-size: var(--text-large-title);
+    font-weight: bold;
+    margin: 0 0 var(--space-2);
+    line-height: 1.4;
+}
+
+.details-author {
+    margin: 0 0 var(--space-5);
+    font-size: var(--text-title2);
+    color: var(--label-secondary);
+}
+
+.details-description {
+    margin: 0 0 var(--space-5);
+    font-size: var(--text-body);
+    line-height: 1.9;
+    white-space: pre-line;
+}
+
+.details-description-empty {
+    color: var(--label-secondary);
+}
+
+.details-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.book-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-full);
+    font-size: var(--text-headline);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.book-action:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.book-action-add {
+    border: none;
+    background: var(--color-blue);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.book-action-add:hover:not(:disabled) {
+    box-shadow: var(--shadow-md);
+    filter: brightness(1.05);
+}
+
+.book-action-add:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.book-action-download {
+    border: 1px solid var(--separator);
+    background: var(--background-grouped);
+    color: var(--label);
+}
+
+.book-action-download:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+}
+
+.book-action-added {
+    border: 1px solid rgba(52, 199, 89, 0.5);
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--color-green);
+    cursor: default;
+}
+
+.details-notice {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-subhead);
+    animation: notice-in 0.2s ease;
+}
+
+.notice-success {
+    background: rgba(52, 199, 89, 0.1);
+    border: 1px solid rgba(52, 199, 89, 0.35);
+    color: var(--color-green);
+}
+
+.notice-error {
+    background: rgba(255, 59, 48, 0.08);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: var(--color-red);
+}
+
+@keyframes notice-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

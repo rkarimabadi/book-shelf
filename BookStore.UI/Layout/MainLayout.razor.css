@@ -1,0 +1,66 @@
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-2) var(--space-5);
+    border-bottom: 1px solid var(--separator);
+}
+
+.app-brand {
+    font-weight: 600;
+    font-size: var(--text-headline);
+    color: var(--label);
+    text-decoration: none;
+}
+
+.app-nav {
+    display: flex;
+    gap: var(--space-4);
+}
+
+.app-nav ::deep a {
+    color: var(--label-secondary);
+    text-decoration: none;
+    min-height: var(--tap-min);
+    display: inline-flex;
+    align-items: center;
+}
+
+.app-nav ::deep a.active {
+    color: var(--color-blue);
+}
+
+.app-auth {
+    margin-inline-start: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.app-auth ::deep a.app-link {
+    color: var(--color-blue);
+    text-decoration: none;
+    min-height: var(--tap-min);
+    display: inline-flex;
+    align-items: center;
+}
+
+.app-user {
+    color: var(--label-secondary);
+}
+
+.app-logout {
+    min-height: var(--tap-min);
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--fill);
+    color: var(--label);
+    font-size: var(--text-body);
+}
+
+.app-content {
+    padding: var(--space-5);
+    max-width: 960px;
+    margin: 0 auto;
+}

@@ -19,7 +19,7 @@ public static class UserErrors
             Error.Unauthorized("User.Inactive", $"User account '{email}' is inactive.");
 
         public static Error RefreshTokenNotFound =>
-            Error.NotFound("User.RefreshTokenNotFound", "Refresh token not found.");
+            Error.Unauthorized("User.RefreshTokenNotFound", "Refresh token not found.");
 
         public static Error RefreshTokenExpired =>
             Error.Unauthorized("User.RefreshTokenExpired", "Refresh token has expired.");

@@ -1,8 +1,10 @@
+using BookStore.Application.Common;
 using BookStore.Application.Common.Interfaces;
 using BookStore.Core.Domain.Books;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BookStore.Application.Features.Books.Commands.UpdateBook;
 
@@ -35,11 +37,19 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
 {
     private readonly IBookRepository _bookRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IFileStorage _fileStorage;
+    private readonly ILogger<UpdateBookCommandHandler> _logger;
 
-    public UpdateBookCommandHandler(IBookRepository bookRepository, IUnitOfWork unitOfWork)
+    public UpdateBookCommandHandler(
+        IBookRepository bookRepository,
+        IUnitOfWork unitOfWork,
+        IFileStorage fileStorage,
+        ILogger<UpdateBookCommandHandler> logger)
     {
         _bookRepository = bookRepository;
         _unitOfWork = unitOfWork;
+        _fileStorage = fileStorage;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<Book>> Handle(UpdateBookCommand command, CancellationToken cancellationToken)
@@ -49,6 +59,9 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
         {
             return BookErrors.Validation.NotFound(command.Id);
         }
+
+        var oldCoverImagePath = book.CoverImagePath;
+        var oldFilePath = book.FilePath;
 
         var updateResult = book.UpdateDetails(
             command.Title,
@@ -65,6 +78,16 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
         _bookRepository.Update(book);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (command.CoverImagePath is not null && !string.IsNullOrWhiteSpace(oldCoverImagePath) && oldCoverImagePath != command.CoverImagePath)
+        {
+            await FileCleanup.DeleteIfExistsAsync(_fileStorage, _logger, oldCoverImagePath, "book cover replacement", cancellationToken);
+        }
+
+        if (command.FilePath is not null && !string.IsNullOrWhiteSpace(oldFilePath) && oldFilePath != command.FilePath)
+        {
+            await FileCleanup.DeleteIfExistsAsync(_fileStorage, _logger, oldFilePath, "book file replacement", cancellationToken);
+        }
 
         return book;
     }

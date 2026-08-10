@@ -1,0 +1,29 @@
+@if (Skeleton)
+{
+    <div class="book-card book-card-skeleton" aria-hidden="true">
+        <div class="skeleton-block skeleton-cover"></div>
+        <div class="book-card-body">
+            <div class="skeleton-block skeleton-line skeleton-line-wide"></div>
+            <div class="skeleton-block skeleton-line skeleton-line-narrow"></div>
+        </div>
+    </div>
+}
+else
+{
+    <NavLink class="book-card" href="@($"/books/{Book.Id}")">
+        <BookCover Path="Book.CoverImagePath" Alt="Book.Title" />
+        <div class="book-card-body">
+            <h3 class="book-card-title">@Book.Title</h3>
+            <p class="book-card-author">@Book.Author</p>
+        </div>
+    </NavLink>
+}
+
+@code {
+    // Required when Skeleton is false (skeleton mode renders placeholders instead).
+    [Parameter]
+    public BookResponse Book { get; set; } = default!;
+
+    [Parameter]
+    public bool Skeleton { get; set; }
+}

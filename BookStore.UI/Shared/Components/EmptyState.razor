@@ -1,0 +1,26 @@
+<div class="empty-state">
+    <span class="empty-icon" aria-hidden="true">@Icon</span>
+    <h2 class="empty-title">@Title</h2>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="empty-message">@Message</p>
+    }
+    @if (Action is not null)
+    {
+        <div class="empty-action">@Action</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Icon { get; set; } = "📚";
+
+    [Parameter]
+    public RenderFragment? Action { get; set; }
+}

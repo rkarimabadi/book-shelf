@@ -1,0 +1,29 @@
+@if (_failed || string.IsNullOrWhiteSpace(Path))
+{
+    <div class="cover-placeholder" aria-hidden="true">
+        <span class="cover-placeholder-icon">📖</span>
+    </div>
+}
+else
+{
+    <img class="cover-image"
+         src="@IBookService.MediaUrl(Path)"
+         alt="@Alt"
+         loading="@(Eager ? "eager" : "lazy")"
+         @onerror="HandleImageError" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string? Path { get; set; }
+
+    [Parameter]
+    public string Alt { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Eager { get; set; }
+
+    private bool _failed;
+
+    private void HandleImageError() => _failed = true;
+}

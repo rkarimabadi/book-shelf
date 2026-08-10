@@ -1,0 +1,54 @@
+@inherits LayoutComponentBase
+@inject IAuthenticationService AuthService
+@inject NavigationManager Nav
+@inject AuthStateProvider AuthState
+
+<div class="app-header">
+    <a class="app-brand" href="">BookStore</a>
+    <nav class="app-nav">
+        <NavLink href="" Match="NavLinkMatch.All">خانه</NavLink>
+        <NavLink href="books">کتاب‌ها</NavLink>
+    </nav>
+    <div class="app-auth">
+        <AuthorizeView>
+            <Authorized Context="auth">
+                <span class="app-user">سلام، @auth.User.Identity?.Name</span>
+                <button type="button" class="app-logout" @onclick="HandleLogout" disabled="@IsLoggingOut">
+                    @(IsLoggingOut ? "در حال خروج..." : "خروج")
+                </button>
+            </Authorized>
+            <NotAuthorized>
+                <NavLink class="app-link" href="login">ورود</NavLink>
+                <NavLink class="app-link" href="register">ثبت‌نام</NavLink>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+<main class="app-content">
+    @Body
+</main>
+
+@code {
+    private bool IsLoggingOut;
+
+    private async Task HandleLogout()
+    {
+        if (IsLoggingOut)
+        {
+            return;
+        }
+
+        IsLoggingOut = true;
+        try
+        {
+            var refreshToken = AuthState.CurrentSession?.RefreshToken ?? string.Empty;
+            await AuthService.LogoutAsync(refreshToken);
+            Nav.NavigateTo("/");
+        }
+        finally
+        {
+            IsLoggingOut = false;
+        }
+    }
+}

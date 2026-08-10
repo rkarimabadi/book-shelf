@@ -1,0 +1,206 @@
+@page "/books/{Id:guid}"
+
+<PageTitle>@(_book?.Title ?? "کتاب")</PageTitle>
+
+@if (_error)
+{
+    <ErrorNotice Title="کتاب پیدا نشد"
+                 Message="این کتاب وجود ندارد یا حذف شده است."
+                 ShowRetry="false" />
+}
+else if (_book is null)
+{
+    <LoadingSpinner Text="در حال بارگذاری کتاب..." />
+}
+else
+{
+    <div class="row g-4 details-layout">
+        <div class="col-12 col-sm-4 col-lg-3">
+            <div class="details-cover">
+                <BookCover Path="_book.CoverImagePath" Alt="_book.Title" Eager="true" />
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-8 col-lg-9">
+            <h1 class="details-title">@_book.Title</h1>
+            <p class="details-author">@_book.Author</p>
+
+            @if (!string.IsNullOrWhiteSpace(_book.Description))
+            {
+                <p class="details-description">@_book.Description</p>
+            }
+            else
+            {
+                <p class="details-description details-description-empty">توضیحی برای این کتاب ثبت نشده است.</p>
+            }
+
+            <div class="details-actions">
+                @if (!string.IsNullOrWhiteSpace(_book.FilePath))
+                {
+                    <a class="book-action book-action-download"
+                       href="@IBookService.MediaUrl(_book.FilePath)"
+                       target="_blank"
+                       rel="noopener">دانلود کتاب</a>
+                }
+
+                @if (_isAuthenticated)
+                {
+                    @if (_isInLibrary)
+                    {
+                        <button type="button" class="book-action book-action-added" disabled>
+                            <span aria-hidden="true">✓</span> در کتابخانهٔ شماست
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="book-action book-action-add"
+                                disabled="@_isBusy"
+                                @onclick="OnAddClick">
+                            @(_isBusy ? "در حال افزودن..." : "افزودن به کتابخانه")
+                        </button>
+                    }
+                }
+                else
+                {
+                    <button type="button" class="book-action book-action-add"
+                            @onclick="QueueAddAndRedirectToLogin">افزودن به کتابخانه</button>
+                }
+            </div>
+
+            @if (_notice is not null)
+            {
+                <div class="details-notice @(_notice.Value.IsError ? "notice-error" : "notice-success")" role="status">
+                    @_notice.Value.Text
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private const string PendingAddKey = "pending_add_book";
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
+    [Inject]
+    private AuthStateProvider AuthState { get; set; } = default!;
+
+    [Inject]
+    private IClientStorageService Storage { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    private BookResponse? _book;
+    private bool _error;
+    private bool _isAuthenticated;
+    private bool _isInLibrary;
+    private bool _isBusy;
+    private (string Text, bool IsError)? _notice;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBookAsync();
+        await LoadAuthStateAsync();
+        await ProcessPendingAddAsync();
+    }
+
+    private async Task LoadBookAsync()
+    {
+        _book = await BookService.GetBookAsync(Id);
+        _error = _book is null;
+    }
+
+    private async Task LoadAuthStateAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+
+        if (_isAuthenticated)
+        {
+            _isInLibrary = await BookService.IsInMyLibraryAsync(Id);
+        }
+    }
+
+    private async Task ProcessPendingAddAsync()
+    {
+        if (!_isAuthenticated)
+        {
+            return;
+        }
+
+        var pending = await Storage.GetItemAsync<string>(PendingAddKey);
+        if (!Guid.TryParse(pending, out var pendingId))
+        {
+            await Storage.RemoveItemAsync(PendingAddKey);
+            return;
+        }
+
+        // Pending add belongs to another book (e.g. user abandoned the login round-trip).
+        if (pendingId != Id)
+        {
+            await Storage.RemoveItemAsync(PendingAddKey);
+            return;
+        }
+
+        await Storage.RemoveItemAsync(PendingAddKey);
+        await AddToLibraryAsync(fromPending: true);
+    }
+
+    private Task OnAddClick() => AddToLibraryAsync(fromPending: false);
+
+    private async Task QueueAddAndRedirectToLogin()
+    {
+        await Storage.SetItemAsync(PendingAddKey, Id.ToString());
+        var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+        Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
+
+    private async Task AddToLibraryAsync(bool fromPending = false)
+    {
+        if (_isBusy)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _notice = null;
+        try
+        {
+            var result = await BookService.AddToLibraryAsync(Id);
+
+            if (result.Unauthorized && !fromPending)
+            {
+                await Storage.SetItemAsync(PendingAddKey, Id.ToString());
+                var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Unauthorized)
+            {
+                // Post-login auto-add still rejected; surface the error instead of bouncing to login again.
+                _notice = (result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", true);
+                return;
+            }
+
+            if (result.Success)
+            {
+                _isInLibrary = true;
+                _notice = ("کتاب با موفقیت به کتابخانهٔ شما اضافه شد.", false);
+            }
+            else
+            {
+                _notice = (result.Message ?? "افزودن به کتابخانه ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

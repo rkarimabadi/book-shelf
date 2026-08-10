@@ -1,24 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Documents\\Book Project\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj": {}
+    "D:\\Code\\book-shelf\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj": {}
   },
   "projects": {
-    "D:\\Documents\\Book Project\\BookStore.Application\\BookStore.Application.csproj": {
+    "D:\\Code\\book-shelf\\BookStore.Application\\BookStore.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Documents\\Book Project\\BookStore.Application\\BookStore.Application.csproj",
+        "projectUniqueName": "D:\\Code\\book-shelf\\BookStore.Application\\BookStore.Application.csproj",
         "projectName": "BookStore.Application",
-        "projectPath": "D:\\Documents\\Book Project\\BookStore.Application\\BookStore.Application.csproj",
-        "packagesPath": "C:\\Users\\karimabadi.r\\.nuget\\packages\\",
-        "outputPath": "D:\\Documents\\Book Project\\BookStore.Application\\obj\\",
+        "projectPath": "D:\\Code\\book-shelf\\BookStore.Application\\BookStore.Application.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "D:\\Code\\book-shelf\\BookStore.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\karimabadi.r\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -28,18 +27,14 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "D:\\Projects\\XAct.Core.PCL\\XAct.Core.PCL\\bin\\Debug": {},
-          "D:\\nuget": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-group/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-hosted/": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj": {
-                "projectPath": "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj"
+              "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj": {
+                "projectPath": "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj"
               }
             }
           }
@@ -54,7 +49,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.200"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -75,6 +70,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[14.2.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[10.0.0, )"
             }
           },
           "imports": [
@@ -93,25 +92,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj": {
+    "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj",
+        "projectUniqueName": "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj",
         "projectName": "BookStore.Core",
-        "projectPath": "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj",
-        "packagesPath": "C:\\Users\\karimabadi.r\\.nuget\\packages\\",
-        "outputPath": "D:\\Documents\\Book Project\\BookStore.Core\\obj\\",
+        "projectPath": "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "D:\\Code\\book-shelf\\BookStore.Core\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\karimabadi.r\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -121,11 +119,7 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "D:\\Projects\\XAct.Core.PCL\\XAct.Core.PCL\\bin\\Debug": {},
-          "D:\\nuget": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-group/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-hosted/": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
@@ -143,7 +137,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.200"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -174,25 +168,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Documents\\Book Project\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj": {
+    "D:\\Code\\book-shelf\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Documents\\Book Project\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj",
+        "projectUniqueName": "D:\\Code\\book-shelf\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj",
         "projectName": "BookStore.Infrastructure",
-        "projectPath": "D:\\Documents\\Book Project\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\karimabadi.r\\.nuget\\packages\\",
-        "outputPath": "D:\\Documents\\Book Project\\BookStore.Infrastructure\\obj\\",
+        "projectPath": "D:\\Code\\book-shelf\\BookStore.Infrastructure\\BookStore.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "D:\\Code\\book-shelf\\BookStore.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\karimabadi.r\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -202,21 +195,17 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "D:\\Projects\\XAct.Core.PCL\\XAct.Core.PCL\\bin\\Debug": {},
-          "D:\\nuget": {},
-          "https://api.nuget.org/v3/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-group/index.json": {},
-          "https://repo.ime.co.ir/repository/nuget-hosted/": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Documents\\Book Project\\BookStore.Application\\BookStore.Application.csproj": {
-                "projectPath": "D:\\Documents\\Book Project\\BookStore.Application\\BookStore.Application.csproj"
+              "D:\\Code\\book-shelf\\BookStore.Application\\BookStore.Application.csproj": {
+                "projectPath": "D:\\Code\\book-shelf\\BookStore.Application\\BookStore.Application.csproj"
               },
-              "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj": {
-                "projectPath": "D:\\Documents\\Book Project\\BookStore.Core\\BookStore.Core.csproj"
+              "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj": {
+                "projectPath": "D:\\Code\\book-shelf\\BookStore.Core\\BookStore.Core.csproj"
               }
             }
           }
@@ -231,7 +220,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.200"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -279,7 +268,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

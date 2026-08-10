@@ -1,0 +1,220 @@
+{
+  "main": {
+    "id": "02433734efd406fc",
+    "type": "split",
+    "children": [
+      {
+        "id": "82b3fcd20094f80f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e185f20239999f47",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "book/MVP Scope Document.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "MVP Scope Document"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a6f1a442286bc8e5",
+    "type": "split",
+    "children": [
+      {
+        "id": "49074a5b93212b83",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1ecf9add7c431dda",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "e16345d8bdcba77f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "c0a755c7afe2b2fe",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "7745dbda1c4fb7df",
+    "type": "split",
+    "children": [
+      {
+        "id": "5bab86b29d282e29",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cbde21faf05938ce",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "book/UI_Layer_Implementation_Guidelines.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "53cd00084de53f7d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "book/UI_Layer_Implementation_Guidelines.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "c56953fb7853e23c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "7abc4de6e8f26347",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "4323d2239ab7898f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "book/UI_Layer_Implementation_Guidelines.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "e185f20239999f47",
+  "lastOpenFiles": [
+    "BookStore.UI/bin/Debug/net9.0/wwwroot/_framework/BookStore.UI.i3ddnwws8b.wasm.gz",
+    "BookStore.UI/bin/Debug/net9.0/wwwroot/_framework/BookStore.UI.05nok8kjmx.pdb.gz",
+    "BookStore.UI/bin/Debug/net9.0/wwwroot/_framework/BookStore.UI.i3ddnwws8b.wasm",
+    "BookStore.UI/bin/Debug/net9.0/wwwroot/_framework/BookStore.UI.05nok8kjmx.pdb",
+    "BookStore.UI/obj/Debug/net9.0/compressed/41vi3nqgp6-vs030y5d2m.gz",
+    "BookStore.UI/obj/Debug/net9.0/compressed/wqpp7zve5d-05nok8kjmx.gz",
+    "BookStore.UI/obj/Debug/net9.0/compressed/2y26chpbco-i3ddnwws8b.gz",
+    "BookStore.UI/obj/Debug/net9.0/compressed/41vi3nqgp6-txm4lblknl.gz",
+    "BookStore.UI/obj/Debug/net9.0/compressed/wqpp7zve5d-g8lrvfjf4f.gz",
+    "BookStore.UI/obj/Debug/net9.0/compressed/2y26chpbco-jnmkx68taz.gz",
+    "BookStore.UI/bin/Debug/net9.0/wwwroot/_framework/BookStore.UI.1wsrswkj9l.pdb.gz",
+    "BookStore.Api/wwwroot/uploads/covers/e6dd1f59158b44249f267e56f8ced7cb_cover.png",
+    "book/UI_Layer_Implementation_Guidelines.md",
+    "book/Presentation Layer Implementation Guidelines.md",
+    "book/MVP Scope Document.md",
+    "book/User Journeys.md",
+    "book/UI  guide.md",
+    "BookStore.Api/wwwroot/uploads/covers/859c90de050b4188a4e53c4436dee9e2_fix-cover2.png",
+    "BookStore.Api/wwwroot/uploads/covers/cbc6902925bd4974ab837bedae9e0a89_fix-cover1.png",
+    "BookStore.Api/wwwroot/uploads/covers/332b8666e28847d69be9dfde02ab240d_fix-cover2.png",
+    "BookStore.Api/wwwroot/uploads/covers/315f7aab46f047528c0783a72d971bc2_fix-cover1.png",
+    "BookStore.Api/wwwroot/uploads/covers/3fcb685fe6954342a83b76ef28e49c0f_fix-cover2.png",
+    "BookStore.Api/wwwroot/uploads/covers/14ac1b1ce05a4554901d519a9c5e5fe4_fix-cover2.png",
+    "BookStore.Api/wwwroot/uploads/covers/bfde027e75564d89bb759f381351c146_fix-cover1.png",
+    "BookStore.Api/wwwroot/uploads/covers/8951039d766d4c51a7ab313e0d58dea7_fix-cover1.png",
+    "BookStore.Api/wwwroot/uploads/covers/d3abe3b425d746fab623596f00a26089_smoke-cover.png"
+  ]
+}

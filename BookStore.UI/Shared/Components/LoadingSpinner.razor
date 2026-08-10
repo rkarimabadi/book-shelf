@@ -1,0 +1,16 @@
+@if (!string.IsNullOrEmpty(Text))
+{
+    <div class="spinner-wrap" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="spinner-text">@Text</span>
+    </div>
+}
+else
+{
+    <span class="spinner spinner-standalone" role="status" aria-label="در حال بارگذاری"></span>
+}
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+}

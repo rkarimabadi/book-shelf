@@ -1,0 +1,128 @@
+@page "/register"
+@inject IAuthenticationService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>ثبت‌نام</PageTitle>
+
+<div class="auth-card">
+    <h1 class="auth-title">ثبت‌نام</h1>
+    <p class="auth-subtitle">یک حساب جدید بسازید</p>
+
+    <form @onsubmit="HandleRegister" novalidate>
+        <div class="auth-field">
+            <label for="firstName">نام</label>
+            <input id="firstName" type="text" class="form-control" @bind="FirstName" autocomplete="given-name" />
+            @if (FieldErrors.TryGetValue("firstName", out var firstNameError))
+            {
+                <span class="field-error">@firstNameError</span>
+            }
+        </div>
+
+        <div class="auth-field">
+            <label for="lastName">نام خانوادگی</label>
+            <input id="lastName" type="text" class="form-control" @bind="LastName" autocomplete="family-name" />
+            @if (FieldErrors.TryGetValue("lastName", out var lastNameError))
+            {
+                <span class="field-error">@lastNameError</span>
+            }
+        </div>
+
+        <div class="auth-field">
+            <label for="email">ایمیل</label>
+            <input id="email" type="email" class="form-control" @bind="Email" autocomplete="email" />
+            @if (FieldErrors.TryGetValue("email", out var emailError))
+            {
+                <span class="field-error">@emailError</span>
+            }
+        </div>
+
+        <div class="auth-field">
+            <label for="password">رمز عبور</label>
+            <input id="password" type="password" class="form-control" @bind="Password" autocomplete="new-password" />
+            @if (FieldErrors.TryGetValue("password", out var passwordError))
+            {
+                <span class="field-error">@passwordError</span>
+            }
+        </div>
+
+        @if (ErrorMessage is not null)
+        {
+            <div class="auth-error" role="alert">@ErrorMessage</div>
+        }
+
+        <button type="submit" class="auth-button" disabled="@IsBusy">
+            @(IsBusy ? "در حال ثبت‌نام..." : "ثبت‌نام")
+        </button>
+    </form>
+
+    <p class="auth-switch">
+        قبلاً ثبت‌نام کرده‌اید؟ <a href="login">وارد شوید</a>
+    </p>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private string FirstName = string.Empty;
+    private string LastName = string.Empty;
+    private string Email = string.Empty;
+    private string Password = string.Empty;
+    private bool IsBusy;
+    private string? ErrorMessage;
+    private Dictionary<string, string> FieldErrors = new();
+
+    private async Task HandleRegister()
+    {
+        ErrorMessage = null;
+        FieldErrors = new();
+
+        if (string.IsNullOrWhiteSpace(FirstName))
+        {
+            FieldErrors["firstName"] = "نام را وارد کنید.";
+        }
+
+        if (string.IsNullOrWhiteSpace(LastName))
+        {
+            FieldErrors["lastName"] = "نام خانوادگی را وارد کنید.";
+        }
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            FieldErrors["email"] = "ایمیل را وارد کنید.";
+        }
+        else if (!Email.Contains('@'))
+        {
+            FieldErrors["email"] = "ایمیل معتبر نیست.";
+        }
+
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            FieldErrors["password"] = "رمز عبور را وارد کنید.";
+        }
+        else if (Password.Length < 8)
+        {
+            FieldErrors["password"] = "رمز عبور باید حداقل ۸ کاراکتر باشد.";
+        }
+
+        if (FieldErrors.Count > 0)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            await AuthService.RegisterAsync(new RegisterRequest(Email.Trim(), Password, FirstName.Trim(), LastName.Trim()));
+            Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

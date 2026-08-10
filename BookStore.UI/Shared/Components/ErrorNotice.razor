@@ -1,0 +1,28 @@
+<div class="error-notice" role="alert">
+    <span class="error-icon" aria-hidden="true">⚠️</span>
+    <div class="error-body">
+        <p class="error-title">@Title</p>
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <p class="error-message">@Message</p>
+        }
+    </div>
+    @if (ShowRetry)
+    {
+        <button type="button" class="error-retry" @onclick="Retry">تلاش دوباره</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "مشکلی پیش آمد.";
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool ShowRetry { get; set; } = true;
+
+    [Parameter]
+    public EventCallback Retry { get; set; }
+}

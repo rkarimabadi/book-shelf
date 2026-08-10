@@ -51,7 +51,13 @@ public sealed class LocalFileStorage : IFileStorage
 
     public string GetFullPath(string relativePath)
     {
+        var baseUrlPath = _options.BaseUrl.Trim('/');
         var trimmed = relativePath.TrimStart('/');
+        if (baseUrlPath.Length > 0 && trimmed.StartsWith(baseUrlPath + "/", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[(baseUrlPath.Length + 1)..];
+        }
+
         return Path.Combine(_options.RootPath, trimmed.Replace('/', Path.DirectorySeparatorChar));
     }
 }

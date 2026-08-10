@@ -1,0 +1,94 @@
+@page "/login"
+@inject IAuthenticationService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>ورود</PageTitle>
+
+<div class="auth-card">
+    <h1 class="auth-title">ورود</h1>
+    <p class="auth-subtitle">برای ادامه، وارد حساب خود شوید</p>
+
+    <form @onsubmit="HandleLogin" novalidate>
+        <div class="auth-field">
+            <label for="email">ایمیل</label>
+            <input id="email" type="email" class="form-control" @bind="Email" autocomplete="email" />
+            @if (FieldErrors.TryGetValue("email", out var emailError))
+            {
+                <span class="field-error">@emailError</span>
+            }
+        </div>
+
+        <div class="auth-field">
+            <label for="password">رمز عبور</label>
+            <input id="password" type="password" class="form-control" @bind="Password" autocomplete="current-password" />
+            @if (FieldErrors.TryGetValue("password", out var passwordError))
+            {
+                <span class="field-error">@passwordError</span>
+            }
+        </div>
+
+        @if (ErrorMessage is not null)
+        {
+            <div class="auth-error" role="alert">@ErrorMessage</div>
+        }
+
+        <button type="submit" class="auth-button" disabled="@IsBusy">
+            @(IsBusy ? "در حال ورود..." : "ورود")
+        </button>
+    </form>
+
+    <p class="auth-switch">
+        حساب ندارید؟ <a href="register">ثبت‌نام کنید</a>
+    </p>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private string Email = string.Empty;
+    private string Password = string.Empty;
+    private bool IsBusy;
+    private string? ErrorMessage;
+    private Dictionary<string, string> FieldErrors = new();
+
+    private async Task HandleLogin()
+    {
+        ErrorMessage = null;
+        FieldErrors = new();
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            FieldErrors["email"] = "ایمیل را وارد کنید.";
+        }
+        else if (!Email.Contains('@'))
+        {
+            FieldErrors["email"] = "ایمیل معتبر نیست.";
+        }
+
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            FieldErrors["password"] = "رمز عبور را وارد کنید.";
+        }
+
+        if (FieldErrors.Count > 0)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            await AuthService.LoginAsync(new LoginRequest(Email.Trim(), Password));
+            Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

@@ -1,0 +1,33 @@
+.spinner-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding-block: var(--space-6);
+    color: var(--label-secondary);
+}
+
+.spinner {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    border: 0.25rem solid var(--fill);
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-standalone {
+    margin: var(--space-6) auto;
+    display: block;
+}
+
+.spinner-text {
+    font-size: var(--text-subhead);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

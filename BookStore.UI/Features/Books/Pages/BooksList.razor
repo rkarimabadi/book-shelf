@@ -1,0 +1,63 @@
+@page "/books"
+
+<PageTitle>کتاب‌ها</PageTitle>
+
+<div class="books-header">
+    <h1>کتاب‌ها</h1>
+    <p class="books-subtitle">مجموعهٔ کامل کتاب‌های موجود</p>
+</div>
+
+@if (_error)
+{
+    <ErrorNotice Title="دریافت کتاب‌ها ناموفق بود"
+                 Message="ارتباط با سرور برقرار نشد؛ لطفاً دوباره تلاش کنید."
+                 Retry="LoadAsync" />
+}
+else if (_books is null)
+{
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3" aria-hidden="true">
+        @for (var i = 0; i < 8; i++)
+        {
+            <div class="col">
+                <BookCard Skeleton="true" />
+            </div>
+        }
+    </div>
+}
+else if (_books.Count == 0)
+{
+    <EmptyState Title="هنوز کتابی ثبت نشده است"
+                Message="به‌زودی کتاب‌های بیشتری به این مجموعه اضافه خواهند شد." />
+}
+else
+{
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3">
+        @foreach (var book in _books)
+        {
+            <div class="col">
+                <BookCard Book="book" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
+    private IReadOnlyList<BookResponse>? _books;
+    private bool _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        _books = null;
+        _books = await BookService.GetBooksAsync();
+        _error = _books is null;
+    }
+}
