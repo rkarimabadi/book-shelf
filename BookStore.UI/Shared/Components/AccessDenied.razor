@@ -1,0 +1,36 @@
+@inject NavigationManager Nav
+
+@if (!_isAuthenticated)
+{
+    <LoadingSpinner Text="در حال انتقال به صفحهٔ ورود..." />
+}
+else
+{
+    <div class="access-denied">
+        <span class="access-denied-icon" aria-hidden="true">🚫</span>
+        <h1 class="access-denied-title">دسترسی محدود</h1>
+        <p class="access-denied-message">این بخش مخصوص مدیران است. شما به این صفحه دسترسی ندارید.</p>
+        <a class="access-denied-home" href="">بازگشت به صفحهٔ اصلی</a>
+    </div>
+}
+
+@code {
+    [Inject]
+    private AuthStateProvider AuthState { get; set; } = default!;
+
+    private bool _isAuthenticated = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+
+        if (!_isAuthenticated)
+        {
+            // Login only honors returnUrls that start with '/' — a leading slash is required for the round-trip.
+            var relativePath = Nav.ToBaseRelativePath(Nav.Uri);
+            var returnUrl = Uri.EscapeDataString("/" + relativePath.TrimStart('/'));
+            Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+        }
+    }
+}

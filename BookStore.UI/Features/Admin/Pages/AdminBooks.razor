@@ -1,0 +1,156 @@
+@page "/admin"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>مدیریت کتاب‌ها</PageTitle>
+
+<div class="admin-header">
+    <div>
+        <h1 class="admin-title">مدیریت کتاب‌ها</h1>
+        <p class="admin-subtitle">افزودن، ویرایش و حذف کتاب‌ها</p>
+    </div>
+    <a class="admin-add-btn" href="admin/add">+ افزودن کتاب جدید</a>
+</div>
+
+@if (_error)
+{
+    <ErrorNotice Title="دریافت کتاب‌ها ناموفق بود"
+                 Message="ارتباط با سرور برقرار نشد؛ لطفاً دوباره تلاش کنید."
+                 Retry="LoadAsync" />
+}
+else if (_books is null)
+{
+    <LoadingSpinner Text="در حال بارگذاری کتاب‌ها..." />
+}
+else if (_books.Count == 0)
+{
+    <EmptyState Title="هنوز کتابی ثبت نشده است"
+                Message="اولین کتاب خود را اضافه کنید تا در بخش عمومی نمایش داده شود."
+                Icon="📚">
+        <Action>
+            <a class="btn btn-primary" href="admin/add">افزودن کتاب جدید</a>
+        </Action>
+    </EmptyState>
+}
+else
+{
+    <div class="admin-book-list">
+        @foreach (var book in _books)
+        {
+            <div class="admin-book-row" @key="book.Id">
+                <div class="admin-book-cover">
+                    <BookCover Path="book.CoverImagePath" Alt="book.Title" Eager="true" />
+                </div>
+                <div class="admin-book-info">
+                    <h3 class="admin-book-title">@book.Title</h3>
+                    <p class="admin-book-author">@book.Author</p>
+                    <span class="admin-book-date">@book.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
+                </div>
+                <div class="admin-book-actions">
+                    <a class="admin-action admin-action-edit" href="admin/edit/@book.Id">ویرایش</a>
+                    <button type="button" class="admin-action admin-action-delete" @onclick="() => AskDelete(book)">حذف</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_deleteTarget is not null)
+{
+    <ConfirmDialog Visible="true"
+                   Title="حذف کتاب"
+                   Message="@($"آیا از حذف «{_deleteTarget.Title}» مطمئن هستید؟ این عمل قابل بازگشت نیست.")"
+                   ConfirmText="حذف"
+                   BusyText="در حال حذف..."
+                   IsBusy="_isDeleting"
+                   OnConfirm="ConfirmDelete"
+                   OnCancel="CancelDelete" />
+}
+
+@if (_notice is not null)
+{
+    <div class="admin-notice @(_notice.Value.IsError ? "notice-error" : "notice-success")" role="status">
+        @_notice.Value.Text
+    </div>
+}
+
+@code {
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
+    [Inject]
+    private IAdminBookService AdminBookService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    private IReadOnlyList<BookResponse>? _books;
+    private bool _error;
+    private BookResponse? _deleteTarget;
+    private bool _isDeleting;
+    private (string Text, bool IsError)? _notice;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        _books = null;
+        _books = await BookService.GetBooksAsync(forceRefresh: true);
+        _error = _books is null;
+    }
+
+    private void AskDelete(BookResponse book)
+    {
+        _deleteTarget = book;
+        _notice = null;
+    }
+
+    private void CancelDelete()
+    {
+        _deleteTarget = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_deleteTarget is null || _isDeleting)
+        {
+            return;
+        }
+
+        _isDeleting = true;
+        try
+        {
+            var result = await AdminBookService.DeleteBookAsync(_deleteTarget.Id);
+
+            if (result.Unauthorized)
+            {
+                _deleteTarget = null;
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin"));
+                return;
+            }
+
+            _deleteTarget = null;
+
+            if (result.Success)
+            {
+                _notice = ("کتاب با موفقیت حذف شد.", false);
+                await LoadAsync();
+            }
+            else if (result.Forbidden)
+            {
+                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+            }
+            else
+            {
+                _notice = (result.Message ?? "حذف کتاب ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+}

@@ -1,0 +1,179 @@
+.admin-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+}
+
+.admin-title {
+    font-size: var(--text-large-title);
+    font-weight: bold;
+    margin: 0;
+}
+
+.admin-subtitle {
+    color: var(--label-secondary);
+    margin: var(--space-2) 0 0;
+}
+
+.admin-add-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-min);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-full);
+    background: var(--color-blue);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.admin-add-btn:hover {
+    opacity: 0.9;
+}
+
+.admin-add-btn:active {
+    transform: scale(0.97);
+}
+
+.admin-book-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.admin-book-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-book-row:hover {
+    border-color: rgba(0, 122, 255, 0.4);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-book-cover {
+    width: 56px;
+    height: 80px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--fill);
+}
+
+.admin-book-cover ::deep .cover-image,
+.admin-book-cover ::deep .cover-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-book-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-book-title {
+    font-size: var(--text-headline);
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-book-author {
+    color: var(--label-secondary);
+    margin: var(--space-1) 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-book-date {
+    display: inline-block;
+    margin-top: var(--space-1);
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+    opacity: 0.8;
+}
+
+.admin-book-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.admin-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap-min);
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--text-subhead);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.admin-action:hover {
+    opacity: 0.85;
+}
+
+.admin-action-edit {
+    background: var(--fill);
+    color: var(--color-blue);
+}
+
+.admin-action-delete {
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--color-red);
+}
+
+.admin-notice {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+}
+
+.admin-notice.notice-success {
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--color-green);
+}
+
+.admin-notice.notice-error {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--color-red);
+}
+
+@media (max-width: 575.98px) {
+    .admin-book-row {
+        flex-wrap: wrap;
+    }
+
+    .admin-book-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .admin-add-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

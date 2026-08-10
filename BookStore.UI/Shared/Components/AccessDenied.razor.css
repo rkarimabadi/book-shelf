@@ -1,0 +1,39 @@
+.access-denied {
+    max-width: 440px;
+    margin: 10vh auto 0;
+    padding: var(--space-6);
+    text-align: center;
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-lg);
+}
+
+.access-denied-icon {
+    display: block;
+    font-size: 3rem;
+    margin-bottom: var(--space-4);
+}
+
+.access-denied-title {
+    font-size: var(--text-title2);
+    font-weight: bold;
+    margin: 0 0 var(--space-3);
+}
+
+.access-denied-message {
+    color: var(--label-secondary);
+    margin: 0 0 var(--space-5);
+    line-height: 1.7;
+}
+
+.access-denied-home {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-min);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-full);
+    background: var(--color-blue);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}

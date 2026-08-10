@@ -1,0 +1,198 @@
+.admin-form-error {
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    background: rgba(255, 59, 48, 0.1);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--color-red);
+}
+
+.book-form-card {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-5);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.book-form-head {
+    margin-bottom: var(--space-5);
+}
+
+.book-form-title {
+    font-size: var(--text-title2);
+    font-weight: bold;
+    margin: 0 0 var(--space-2);
+}
+
+.book-form-subtitle {
+    color: var(--label-secondary);
+    margin: 0;
+}
+
+.book-form-fields {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.book-field {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.book-field label {
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+}
+
+.book-input {
+    width: 100%;
+    min-height: var(--tap-min);
+    padding: var(--space-2) var(--space-3);
+    background: var(--background-grouped);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    color: var(--label);
+    font-size: var(--text-body);
+    font-family: inherit;
+}
+
+.book-input:focus {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 122, 255, 0.2);
+}
+
+.book-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.book-field-error {
+    font-size: var(--text-caption1);
+    color: var(--color-red);
+}
+
+.book-form-files {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+}
+
+.book-upload {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.book-upload-label {
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+}
+
+.book-optional {
+    color: var(--label-secondary);
+    opacity: 0.7;
+}
+
+.book-upload-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    padding: var(--space-3);
+    background: var(--background-grouped);
+    border: 1px dashed var(--separator);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.book-upload-zone:hover {
+    border-color: var(--color-blue);
+    background: rgba(0, 122, 255, 0.05);
+}
+
+.book-upload-zone-file {
+    min-height: 180px;
+}
+
+.book-upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--label-secondary);
+    font-size: var(--text-subhead);
+}
+
+.book-upload-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.book-cover-preview {
+    max-width: 100%;
+    max-height: 170px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
+.book-file-selected {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--label);
+    font-size: var(--text-subhead);
+    word-break: break-word;
+    text-align: center;
+}
+
+.book-file-input {
+    display: none;
+}
+
+.book-form-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+}
+
+.book-btn {
+    flex: 1;
+    min-height: var(--tap-min);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--text-headline);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.book-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.book-btn-primary {
+    background: var(--color-blue);
+    color: #fff;
+}
+
+.book-btn-primary:not(:disabled):active {
+    transform: scale(0.98);
+}
+
+.book-btn-ghost {
+    background: var(--fill);
+    color: var(--label);
+}
+
+@media (min-width: 576px) {
+    .book-form-files {
+        grid-template-columns: 1fr 1fr;
+    }
+}

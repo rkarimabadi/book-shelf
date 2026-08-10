@@ -1,0 +1,47 @@
+@if (Visible)
+{
+    <div class="confirm-overlay" @onclick:stopPropagation="true" role="presentation">
+        <div class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+            <h2 id="confirm-title" class="confirm-title">@Title</h2>
+            @if (!string.IsNullOrEmpty(Message))
+            {
+                <p id="confirm-message" class="confirm-message">@Message</p>
+            }
+            <div class="confirm-actions">
+                <button type="button" class="confirm-btn confirm-cancel" disabled="@IsBusy" @onclick="OnCancel">@CancelText</button>
+                <button type="button" class="confirm-btn confirm-danger" disabled="@IsBusy" @onclick="OnConfirm">
+                    @(IsBusy ? BusyText : ConfirmText)
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "تأیید عملیات";
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ConfirmText { get; set; } = "تأیید";
+
+    [Parameter]
+    public string CancelText { get; set; } = "انصراف";
+
+    [Parameter]
+    public string BusyText { get; set; } = "در حال انجام...";
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+}

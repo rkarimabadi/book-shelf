@@ -97,9 +97,10 @@ The solution follows Clean Architecture principles with Domain-Driven Design:
 - One entry point / one origin: `BookStore.Api` serves both `/api/*` (controllers) and the WASM app at `/`
 - `BookStore.Api/Program.cs`: `UseBlazorFrameworkFiles()` + `UseStaticFiles()` + `MapFallbackToFile("index.html")` (+ dev-only `UseWebAssemblyDebugging()`); requires `Microsoft.AspNetCore.Components.WebAssembly.Server` package
 - Run with `dotnet run --project BookStore.Api` (or the `http`/`https` launch profiles) — the WASM client is served at the same URL as the API (http://localhost:5114 / https://localhost:7293; Swagger at `/swagger`)
-- **Structure**: `Pages/` (Home, Login, Register), `Layout/` (MainLayout + scoped CSS, Persian RTL), `Services/` (`AuthenticationService` + `IAuthenticationService`, `AuthStateProvider`, `ClientStorageService` + `IClientStorageService`, `AuthenticatedHttpClientHandler`), `Features/Books/` (feature-driven: `Pages/`, `Components/`, `Services/`), `Shared/Components/` (LoadingSpinner, EmptyState, ErrorNotice), `wwwroot/` (index.html, css/app.css, bootstrap in lib/)
+- **Structure**: `Pages/` (Home, Login, Register), `Layout/` (MainLayout + scoped CSS, Persian RTL), `Services/` (`AuthenticationService` + `IAuthenticationService`, `AuthStateProvider`, `ClientStorageService` + `IClientStorageService`, `AuthenticatedHttpClientHandler`, `ProblemDetailsParser` shared helper), `Features/` (feature-driven: `Books/`, `Admin/` — each with `Pages/`, `Components/`, `Services/`), `Shared/Components/` (LoadingSpinner, EmptyState, ErrorNotice, ConfirmDialog, AccessDenied), `wwwroot/` (index.html, css/app.css, bootstrap in lib/)
 - **Auth flow**: login/register post to the API, then `AuthStateProvider.SignInAsync` persists `auth_token`/`refresh_token` in localStorage (`IJSRuntime`) and raises `NotifyAuthenticationStateChanged`. `AuthStateProvider.ParseToken` decodes the JWT payload (base64url) and builds `ClaimsPrincipal` (email/role/given_name/family_name); expired tokens → anonymous.
-- `MainLayout` uses `<AuthorizeView>` (needs `AddAuthorizationCore` + `AddCascadingAuthenticationState` in `Program.cs`) to switch between "ورود/ثبتنام" links and the logged-in user + logout button.
+- `MainLayout` uses `<AuthorizeView>` (needs `AddAuthorizationCore` + `AddCascadingAuthenticationState` in `Program.cs`) to switch between "ورود/ثبتنام" links and the logged-in user + logout button; an admin-only `مدیریت` nav link renders inside `<AuthorizeView Roles="Admin">`.
+- `App.razor` uses `<AuthorizeRouteView>` (not plain `RouteView`) with a `<NotAuthorized>` template → `AccessDenied` component: anonymous users are redirected to `/login?returnUrl=...`; authenticated non-admins see a Persian access-denied message. Admin pages carry `@attribute [Authorize(Roles = "Admin")]`.
 - PWA capabilities (planned)
 
 ### Security
@@ -233,6 +234,13 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **API:** `LibraryController` — `GET /api/library`, `POST /api/library` (body `{ bookId }`), `DELETE /api/library/{bookId}`; all `[Authorize]`, userId from JWT `sub` claim
 - Verified by manual smoke test: 401 anonymous, 409 duplicate add, 404 missing book, per-user isolation, remove → 404 on re-remove
 
+## User Library UI Status
+
+- **Page:** `Features/Library/Pages/MyLibrary.razor` (`/library`, `[Authorize]` + `AuthorizeRouteView` — anonymous users are redirected to `/login?returnUrl=%2Flibrary`); responsive card grid reusing `BookCard`, plus skeleton loading, `EmptyState` (with CTA to /books) and `ErrorNotice` with retry
+- **Data:** reuses `IBookService.GetMyLibraryAsync()` (`GET /api/library`); maps `LibraryBookResponse` → `BookResponse` for `BookCard` (maps `AddedAt` into both `CreatedAt`/`UpdatedAt` — harmless since the card never renders dates, see comment in the page)
+- **Nav:** «کتابخانه» link in `MainLayout` inside `<AuthorizeView>` (visible to all authenticated users; the «مدیریت» link stays admin-only)
+- Verified via browser + API smoke test: anonymous `/library` → login redirect, book add → library GET returns it, empty state for a fresh user; build 0 warnings / 0 errors
+
 ## Public Books UI Status
 
 - **Pages:** `Features/Books/Pages/BooksList.razor` (`/books` — responsive card grid, skeleton loading, EmptyState/ErrorNotice states), `BookDetails.razor` (`/books/{id:guid}` — cover, title, author, description, دانلود button, auth-aware افزودن به کتابخانه)
@@ -241,6 +249,15 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **Details-page auth flow:** anonymous click on افزودن → stores pending bookId in localStorage → redirects to `/login?returnUrl=/books/{id}` → after login/register returns to the book → auto-adds and shows a success notice; 409 duplicate is mapped to a friendly Persian message; if already in library the button is disabled («در کتابخانهٔ شماست»); a 401 after a fresh login shows the error instead of looping back to login
 - **DI:** `AddScoped<IClientStorageService>` + HttpClient factory (with auth handler) + `AddScoped<IBookService>` in `BookStore.UI/Program.cs`
 - Verified via browser smoke test: list + details render, anonymous→login→auto-add E2E, 409/401 handled gracefully
+
+## Admin Content Management UI Status
+
+- **Pages:** `Features/Admin/Pages/AdminBooks.razor` (`/admin` — book list with cover thumb, ویرایش/حذف actions, empty/loading/error states, ConfirmDialog on delete + success notice), `AdminBookAdd.razor` (`/admin/add`), `AdminBookEdit.razor` (`/admin/edit/{id:guid}`)
+- **Components:** `BookForm` (shared add/edit form: title/author/description + cover & EPUB `InputFile` pickers with C#-only cover preview via base64 data-URL — no JS interop; client-side validation: title/author required, EPUB required on create, file-size caps 5 MB cover / 25 MB book; edit mode prefills and keeps existing files when no new ones are chosen), shared `ConfirmDialog` (pure-CSS modal) and `AccessDenied`
+- **Services:** `IAdminBookService`/`AdminBookService` — multipart POST/PUT (`title`/`author`/`description`/`coverImage`/`file` field names matching `BooksController`; safe ASCII upload names since the server renames anyway) + DELETE; maps ProblemDetails to Persian messages via shared `ProblemDetailsParser` (also used by `BookService` and `AuthenticationService`)
+- **Auth:** pages guarded with `[Authorize(Roles = "Admin")]` + `AuthorizeRouteView` (see Frontend section); 401 → redirect to login with returnUrl; 403 → friendly Persian message
+- **DI:** `AddScoped<IAdminBookService, AdminBookService>()` in `BookStore.UI/Program.cs` (uses the same shared HttpClient with the JWT bearer handler)
+- Verified via browser + API smoke test: admin-only nav, anonymous `/admin` → `/login?returnUrl=%2Fadmin`, add form validation, edit prefill + save (title-only update keeps files), delete with confirm, and API contract 201/200/401/403/204
 
 ## Known Pitfalls (learned via smoke tests)
 
@@ -253,6 +270,8 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 7. **Blazor DI: register `AuthStateProvider` under both the concrete and base types.** `MainLayout` injects the concrete `AuthStateProvider` while the auth pipeline resolves `AuthenticationStateProvider`. `AddScoped<AuthenticationStateProvider, AuthStateProvider>()` alone fails at render time ("no registered service of type 'BookStore.UI.Services.AuthStateProvider'"). Fix: `AddScoped<AuthStateProvider>()` + `AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>())`.
 8. **Tokens in localStorage are raw strings, not JSON.** `AuthStateProvider` stores `auth_token`/`refresh_token` as plain strings, so `ClientStorageService.GetItemAsync<string>` must catch `JsonException` and return the raw value — otherwise any read of a stored token crashes the request (hit when the JWT bearer handler broke all API calls once a token existed).
 9. **A `DelegatingHandler` handed to `new HttpClient(handler)` needs `InnerHandler` assigned** (e.g. `InnerHandler = new HttpClientHandler()`), otherwise every request throws `InvalidOperationException: The inner handler has not been assigned.` Also: don't register one handler instance and share it across several HttpClients — each HttpClient should own its private chain (create it in the HttpClient factory).
+10. **Login `returnUrl` values must start with `/`.** `Login.razor` only honors `ReturnUrl` when it `StartsWith('/')`, so building one from `NavigationManager.ToBaseRelativePath` (which yields `admin`, no leading slash) silently sends the user home after login. Fix: prefix `"/"` before escaping (`Uri.EscapeDataString("/" + relativePath.TrimStart('/'))`).
+11. **Blazor reuses a page instance when navigating between two URLs that match the same route template** (e.g. `/admin/edit/A` → `/admin/edit/B`), so `OnInitializedAsync` never re-runs and the page shows stale data. Fix: reload in `OnParametersSetAsync` keyed on a last-seen id (`if (Id != _loadedId) { _loadedId = Id; ... }`); child components with prefill state need the same id-guard (see `BookForm._prefilledForId`).
 
 ## Next Steps
 
@@ -261,7 +280,9 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 3. Create book management domain entities — DONE
 4. Add validation and error handling (API-level) — DONE
 5. Blazor WebAssembly UI: project + register/login pages + home page — DONE (hosted in BookStore.Api, served at `/`)
-6. Public books UI (list + details + add-to-library) — DONE; admin CRUD UI (add/edit/delete books) — TODO
+6. Public books UI (list + details + add-to-library) — DONE
+7. Admin content-management UI (add/edit/delete books at `/admin`, `/admin/add`, `/admin/edit/{id}`, role-guarded) — DONE
+8. User library UI page (`/library` — list user's saved books) — DONE
 
 ### Migrations
 

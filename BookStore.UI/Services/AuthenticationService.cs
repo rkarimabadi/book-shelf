@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using BookStore.Contracts.Authentication;
 
 namespace BookStore.UI.Services;
@@ -72,38 +71,7 @@ public class AuthenticationService : IAuthenticationService
 
     private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
     {
-        try
-        {
-            var content = await response.Content.ReadAsStringAsync();
-            using var document = JsonDocument.Parse(content);
-            var root = document.RootElement;
-
-            if (root.TryGetProperty("title", out var title) && !string.IsNullOrEmpty(title.GetString()))
-            {
-                return title.GetString()!;
-            }
-
-            if (root.TryGetProperty("detail", out var detail) && !string.IsNullOrEmpty(detail.GetString()))
-            {
-                return detail.GetString()!;
-            }
-
-            if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in errors.EnumerateObject())
-                {
-                    if (property.Value.ValueKind == JsonValueKind.Array &&
-                        property.Value.GetArrayLength() > 0)
-                    {
-                        return property.Value[0].GetString() ?? "خطا در داده‌های ورودی.";
-                    }
-                }
-            }
-        }
-        catch (JsonException)
-        {
-        }
-
-        return $"درخواست ناموفق بود ({response.StatusCode}).";
+        var content = await response.Content.ReadAsStringAsync();
+        return ProblemDetailsParser.ReadMessage(content) ?? $"درخواست ناموفق بود ({response.StatusCode}).";
     }
 }

@@ -1,0 +1,85 @@
+@page "/library"
+@attribute [Authorize]
+
+<PageTitle>کتابخانهٔ من</PageTitle>
+
+<div class="library-header">
+    <h1 class="library-title">کتابخانهٔ من</h1>
+    <p class="library-subtitle">کتاب‌هایی که ذخیره کرده‌اید</p>
+</div>
+
+@if (_error)
+{
+    <ErrorNotice Title="دریافت کتابخانه ناموفق بود"
+                 Message="ارتباط با سرور برقرار نشد؛ لطفاً دوباره تلاش کنید."
+                 Retry="LoadAsync" />
+}
+else if (_books is null)
+{
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3" aria-hidden="true">
+        @for (var i = 0; i < 8; i++)
+        {
+            <div class="col">
+                <BookCard Skeleton="true" />
+            </div>
+        }
+    </div>
+}
+else if (_books.Count == 0)
+{
+    <EmptyState Title="کتابخانه‌تان هنوز خالی است"
+                Message="کتاب‌هایی را که دوست دارید به کتابخانه اضافه کنید تا این‌جا ببینیدشان."
+                Icon="📚">
+        <Action>
+            <a class="btn btn-primary" href="books">مشاهدهٔ کتاب‌ها</a>
+        </Action>
+    </EmptyState>
+}
+else
+{
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3">
+        @foreach (var book in _books)
+        {
+            <div class="col">
+                <BookCard Book="book" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
+    private IReadOnlyList<BookResponse>? _books;
+    private bool _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        _books = null;
+
+        var library = await BookService.GetMyLibraryAsync();
+        _error = library is null;
+
+        // BookCard consumes BookResponse. The card never renders CreatedAt/UpdatedAt, so mapping
+        // AddedAt into both is harmless — but if a future card displays CreatedAt it would show the
+        // library-add date. Keep that in mind if BookCard ever grows a date caption.
+        _books = library?
+            .Select(entry => new BookResponse(
+                entry.Id,
+                entry.Title,
+                entry.Author,
+                entry.Description,
+                entry.CoverImagePath,
+                entry.FilePath,
+                entry.AddedAt,
+                entry.AddedAt))
+            .ToList();
+    }
+}

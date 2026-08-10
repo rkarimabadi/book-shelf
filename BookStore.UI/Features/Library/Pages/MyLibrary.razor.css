@@ -1,0 +1,14 @@
+.library-header {
+    margin-bottom: var(--space-5);
+}
+
+.library-title {
+    font-size: var(--text-large-title);
+    font-weight: bold;
+    margin: 0;
+}
+
+.library-subtitle {
+    color: var(--label-secondary);
+    margin: var(--space-2) 0 0;
+}

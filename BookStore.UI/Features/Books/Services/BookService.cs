@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using BookStore.Contracts.Books;
 using BookStore.Contracts.Library;
+using BookStore.UI.Services;
 
 namespace BookStore.UI.Features.Books.Services;
 
@@ -99,27 +99,15 @@ public sealed class BookService : IBookService
 
     private static async Task<string> ReadProblemMessageAsync(HttpResponseMessage response)
     {
-        try
-        {
-            var content = await response.Content.ReadAsStringAsync();
-            using var document = JsonDocument.Parse(content);
-            var root = document.RootElement;
+        var content = await response.Content.ReadAsStringAsync();
+        var message = ProblemDetailsParser.ReadMessage(content);
 
-            if (root.TryGetProperty("title", out var title) && !string.IsNullOrWhiteSpace(title.GetString()))
-            {
-                var titleText = title.GetString()!;
-                if (titleText.Contains("already in the user's library", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "این کتاب قبلاً به کتابخانهٔ شما اضافه شده است.";
-                }
-
-                return titleText;
-            }
-        }
-        catch (JsonException)
+        if (message is not null &&
+            message.Contains("already in the user's library", StringComparison.OrdinalIgnoreCase))
         {
+            return "این کتاب قبلاً به کتابخانهٔ شما اضافه شده است.";
         }
 
-        return "افزودن به کتابخانه ناموفق بود؛ دوباره تلاش کنید.";
+        return message ?? "افزودن به کتابخانه ناموفق بود؛ دوباره تلاش کنید.";
     }
 }

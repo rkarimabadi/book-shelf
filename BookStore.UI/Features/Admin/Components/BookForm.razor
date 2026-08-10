@@ -1,0 +1,270 @@
+@if (_errorMessage is not null)
+{
+    <div class="admin-form-error" role="alert">@_errorMessage</div>
+}
+
+<div class="book-form-card">
+    <div class="book-form-head">
+        <h1 class="book-form-title">@(Existing is null ? "افزودن کتاب جدید" : "ویرایش کتاب")</h1>
+        <p class="book-form-subtitle">
+            @(Existing is null
+                ? "اطلاعات کتاب را وارد کنید و فایل آن را بارگذاری کنید."
+                : "تغییرات را اعمال کنید؛ برای نگه‌داشتن فایل فعلی، فایل جدید انتخاب نکنید.")
+        </p>
+    </div>
+
+    <div class="book-form-fields">
+        <div class="book-field">
+            <label for="bookTitle">عنوان</label>
+            <input id="bookTitle"
+                   type="text"
+                   class="book-input"
+                   maxlength="200"
+                   @bind="Title"
+                   @bind:event="oninput"
+                   autocomplete="off" />
+            @if (FieldErrors.TryGetValue("Title", out var titleError))
+            {
+                <span class="book-field-error">@titleError</span>
+            }
+        </div>
+
+        <div class="book-field">
+            <label for="bookAuthor">نویسنده</label>
+            <input id="bookAuthor"
+                   type="text"
+                   class="book-input"
+                   maxlength="100"
+                   @bind="Author"
+                   @bind:event="oninput"
+                   autocomplete="off" />
+            @if (FieldErrors.TryGetValue("Author", out var authorError))
+            {
+                <span class="book-field-error">@authorError</span>
+            }
+        </div>
+
+        <div class="book-field">
+            <label for="bookDescription">توضیحات</label>
+            <textarea id="bookDescription"
+                      class="book-input book-textarea"
+                      rows="4"
+                      @bind="Description"
+                      @bind:event="oninput"></textarea>
+            @if (FieldErrors.TryGetValue("Description", out var descriptionError))
+            {
+                <span class="book-field-error">@descriptionError</span>
+            }
+        </div>
+    </div>
+
+    <div class="book-form-files">
+        <div class="book-upload">
+            <span class="book-upload-label">تصویر جلد <small class="book-optional">(اختیاری)</small></span>
+            <label class="book-upload-zone" for="bookCoverInput">
+                @if (_coverPreviewUrl is not null)
+                {
+                    <img class="book-cover-preview" src="@_coverPreviewUrl" alt="پیش‌نمایش جلد" />
+                }
+                else if (Existing is not null && !string.IsNullOrWhiteSpace(Existing.CoverImagePath))
+                {
+                    <img class="book-cover-preview" src="@IBookService.MediaUrl(Existing.CoverImagePath)" alt="جلد فعلی" />
+                }
+                else
+                {
+                    <span class="book-upload-placeholder">
+                        <span class="book-upload-icon" aria-hidden="true">🖼️</span>
+                        <span>برای انتخاب کلیک کنید</span>
+                    </span>
+                }
+            </label>
+            <InputFile id="bookCoverInput" class="book-file-input" accept="image/*" OnChange="OnCoverSelected" />
+            @if (FieldErrors.TryGetValue("Cover", out var coverError))
+            {
+                <span class="book-field-error">@coverError</span>
+            }
+        </div>
+
+        <div class="book-upload">
+            <span class="book-upload-label">
+                فایل کتاب (EPUB)
+                @if (Existing is not null)
+                {
+                    <small class="book-optional">(اختیاری)</small>
+                }
+            </span>
+            <label class="book-upload-zone book-upload-zone-file" for="bookFileInput">
+                @if (_bookFileName is not null)
+                {
+                    <span class="book-file-selected">
+                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <span>@_bookFileName</span>
+                    </span>
+                }
+                else if (Existing is not null && !string.IsNullOrWhiteSpace(Existing.FilePath))
+                {
+                    <span class="book-file-selected">
+                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <span>@Path.GetFileName(Existing.FilePath)</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="book-upload-placeholder">
+                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <span>برای انتخاب کلیک کنید</span>
+                    </span>
+                }
+            </label>
+            <InputFile id="bookFileInput" class="book-file-input" accept=".epub,application/epub+zip" OnChange="OnBookFileSelected" />
+            @if (FieldErrors.TryGetValue("File", out var fileError))
+            {
+                <span class="book-field-error">@fileError</span>
+            }
+        </div>
+    </div>
+
+    <div class="book-form-actions">
+        <button type="button" class="book-btn book-btn-ghost" disabled="@IsBusy" @onclick="OnCancel">انصراف</button>
+        <button type="button" class="book-btn book-btn-primary" disabled="@IsBusy" @onclick="Submit">
+            @(IsBusy ? "در حال ذخیره..." : (Existing is null ? "ثبت کتاب" : "ذخیرهٔ تغییرات"))
+        </button>
+    </div>
+</div>
+
+@code {
+    // Null in create mode; set in edit mode to prefill + keep existing files.
+    [Parameter]
+    public BookResponse? Existing { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<BookFormSubmit> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private string Title = string.Empty;
+    private string Author = string.Empty;
+    private string Description = string.Empty;
+
+    private IBrowserFile? _coverFile;
+    private string? _coverPreviewUrl;
+    private IBrowserFile? _bookFile;
+    private string? _bookFileName;
+    private Guid? _prefilledForId;
+    private string? _errorMessage;
+    private Dictionary<string, string> FieldErrors = new();
+
+    protected override void OnParametersSet()
+    {
+        // Prefill (and re-prefill) whenever the target book changes. Guarding on the book id keeps
+        // user edits intact across re-renders while still resetting when navigating to another book.
+        var targetId = Existing?.Id;
+        if (targetId != _prefilledForId)
+        {
+            _prefilledForId = targetId;
+            Title = Existing?.Title ?? string.Empty;
+            Author = Existing?.Author ?? string.Empty;
+            Description = Existing?.Description ?? string.Empty;
+            _coverFile = null;
+            _coverPreviewUrl = null;
+            _bookFile = null;
+            _bookFileName = null;
+            FieldErrors = new();
+        }
+
+        _errorMessage = ErrorMessage;
+    }
+
+    private async Task OnCoverSelected(InputFileChangeEventArgs e)
+    {
+        FieldErrors.Remove("Cover");
+
+        var file = e.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            FieldErrors["Cover"] = "فقط فایل تصویری مجاز است.";
+            return;
+        }
+
+        try
+        {
+            _coverFile = file;
+
+            await using var stream = file.OpenReadStream(AdminBookService.CoverMaxBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            _coverPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception)
+        {
+            _coverFile = null;
+            _coverPreviewUrl = null;
+            FieldErrors["Cover"] = "حجم تصویر بیش از حد مجاز است (حداکثر ۵ مگابایت).";
+        }
+    }
+
+    private void OnBookFileSelected(InputFileChangeEventArgs e)
+    {
+        FieldErrors.Remove("File");
+
+        var file = e.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.Size > AdminBookService.BookMaxBytes)
+        {
+            FieldErrors["File"] = "حجم فایل بیش از حد مجاز است (حداکثر ۲۵ مگابایت).";
+            return;
+        }
+
+        _bookFile = file;
+        _bookFileName = file.Name;
+    }
+
+    private async Task Submit()
+    {
+        FieldErrors = new();
+
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            FieldErrors["Title"] = "عنوان را وارد کنید.";
+        }
+
+        if (string.IsNullOrWhiteSpace(Author))
+        {
+            FieldErrors["Author"] = "نویسنده را وارد کنید.";
+        }
+
+        if (Existing is null && _bookFile is null)
+        {
+            FieldErrors["File"] = "فایل کتاب (EPUB) الزامی است.";
+        }
+
+        if (FieldErrors.Count > 0)
+        {
+            return;
+        }
+
+        await OnSubmit.InvokeAsync(new BookFormSubmit(
+            Title.Trim(),
+            Author.Trim(),
+            Description?.Trim() ?? string.Empty,
+            _coverFile,
+            _bookFile));
+    }
+}

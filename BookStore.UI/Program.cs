@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BookStore.UI;
+using BookStore.UI.Features.Admin.Services;
 using BookStore.UI.Features.Books.Services;
 using BookStore.UI.Services;
 
@@ -30,5 +31,6 @@ builder.Services.AddScoped<AuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IAdminBookService, AdminBookService>();
 
 await builder.Build().RunAsync();

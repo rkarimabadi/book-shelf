@@ -8,6 +8,16 @@
     <nav class="app-nav">
         <NavLink href="" Match="NavLinkMatch.All">خانه</NavLink>
         <NavLink href="books">کتاب‌ها</NavLink>
+        <AuthorizeView>
+            <Authorized>
+                <NavLink href="library">کتابخانه</NavLink>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <NavLink href="admin">مدیریت</NavLink>
+            </Authorized>
+        </AuthorizeView>
     </nav>
     <div class="app-auth">
         <AuthorizeView>

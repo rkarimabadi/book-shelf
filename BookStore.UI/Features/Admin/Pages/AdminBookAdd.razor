@@ -1,0 +1,61 @@
+@page "/admin/add"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>افزودن کتاب جدید</PageTitle>
+
+<BookForm IsBusy="_isBusy"
+          ErrorMessage="_errorMessage"
+          OnSubmit="HandleSubmit"
+          OnCancel="GoBack" />
+
+@code {
+    [Inject]
+    private IAdminBookService AdminBookService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    private bool _isBusy;
+    private string? _errorMessage;
+
+    private void GoBack() => Nav.NavigateTo("/admin");
+
+    private async Task HandleSubmit(BookFormSubmit form)
+    {
+        if (_isBusy)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _errorMessage = null;
+        try
+        {
+            var result = await AdminBookService.CreateBookAsync(form);
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/add"));
+                return;
+            }
+
+            if (result.Success)
+            {
+                Nav.NavigateTo("/admin");
+                return;
+            }
+
+            if (result.Forbidden)
+            {
+                _errorMessage = "شما مجوز لازم برای این عملیات را ندارید.";
+                return;
+            }
+
+            _errorMessage = result.Message ?? "ثبت کتاب ناموفق بود؛ دوباره تلاش کنید.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}
