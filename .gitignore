@@ -17,8 +17,14 @@ wwwroot/uploads/
 *.log
 *.err.log
 
+# Secrets (never commit real production credentials)
+appsettings.Production.json
+
 # IDE
 .vs/
 .vscode/
 .idea/
 /book/.obsidian/workspace.json
+/.obsidian/workspace.json
+/publish
+/BookStore.Api/wwwroot/uploads
