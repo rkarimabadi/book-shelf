@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using ErrorOr;
 using BookStore.Core.Domain.Users;
 
@@ -133,6 +134,53 @@ public class AuthenticationService : IAuthenticationService
         return Result.Success;
     }
 
+    public ErrorOr<(User User, string ResetToken)> RequestPasswordReset(string email)
+    {
+        var user = _userRepository.GetByEmail(email);
+        if (user == null)
+        {
+            // The handler turns this into a silent success so the endpoint never reveals
+            // whether an account with the given email exists.
+            return UserErrors.Validation.UserNotFound(email);
+        }
+
+        user.InvalidatePasswordResetTokens();
+
+        var resetToken = GeneratePasswordResetToken();
+        var expiresAt = DateTime.UtcNow.AddHours(PasswordResetTokenLifetimeHours);
+
+        var addResult = user.AddPasswordResetToken(resetToken, expiresAt);
+        if (addResult.IsError)
+        {
+            return addResult.Errors;
+        }
+
+        _userRepository.Update(user);
+
+        return (user, resetToken);
+    }
+
+    public ErrorOr<Success> ResetPassword(string email, string resetToken, string newPasswordHash)
+    {
+        var tokenHash = PasswordResetToken.HashToken(resetToken);
+
+        var user = _userRepository.GetByPasswordResetToken(tokenHash);
+        if (user == null || !string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        {
+            return UserErrors.Validation.ResetTokenNotFound;
+        }
+
+        var resetResult = user.ResetPassword(tokenHash, newPasswordHash);
+        if (resetResult.IsError)
+        {
+            return resetResult.Errors;
+        }
+
+        _userRepository.Update(user);
+
+        return Result.Success;
+    }
+
     public ErrorOr<User> GetUserByEmail(string email)
     {
         var user = _userRepository.GetByEmail(email);
@@ -176,4 +224,12 @@ public class AuthenticationService : IAuthenticationService
     {
         return Guid.NewGuid().ToString("N");
     }
+
+    private static string GeneratePasswordResetToken()
+    {
+        // 32 random bytes -> 64 hex chars; high-entropy and only ever shown in the reset email.
+        return Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    }
+
+    private const int PasswordResetTokenLifetimeHours = 1;
 }

@@ -3,6 +3,7 @@ using BookStore.Core.Domain.Authentication;
 using BookStore.Core.Domain.Books;
 using BookStore.Infrastructure.Authentication;
 using BookStore.Infrastructure.BackgroundJobs;
+using BookStore.Infrastructure.Email;
 using BookStore.Infrastructure.Persistence;
 using BookStore.Infrastructure.Persistence.Interceptors;
 using BookStore.Infrastructure.Persistence.Repositories;
@@ -40,6 +41,10 @@ public static class DependencyInjection
         services.AddOptions<LocalFileStorageOptions>()
             .Bind(configuration.GetSection(LocalFileStorageOptions.SectionName));
         services.AddScoped<IFileStorage, LocalFileStorage>();
+
+        services.AddOptions<SmtpSettings>()
+            .Bind(configuration.GetSection(SmtpSettings.SectionName));
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         services.AddOptions<JwtSettings>()
             .Bind(configuration.GetSection(JwtSettings.SectionName))

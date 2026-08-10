@@ -214,6 +214,30 @@ code {
     color: var(--color-red);
 }
 
+.auth-success {
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    background: rgba(52, 199, 89, 0.1);
+    border: 1px solid rgba(52, 199, 89, 0.35);
+    border-radius: var(--radius-md);
+    color: var(--color-green);
+    line-height: 1.8;
+}
+
+.auth-links {
+    margin: calc(-1 * var(--space-2)) 0 var(--space-4);
+    font-size: var(--text-caption1);
+    text-align: start;
+}
+
+.auth-button-link {
+    display: block;
+    text-align: center;
+    line-height: var(--tap-min);
+    text-decoration: none;
+    color: #fff !important;
+}
+
 .auth-button {
     width: 100%;
     min-height: var(--tap-min);

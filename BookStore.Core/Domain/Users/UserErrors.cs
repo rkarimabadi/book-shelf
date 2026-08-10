@@ -32,5 +32,14 @@ public static class UserErrors
 
         public static Error BookNotInLibrary(Guid bookId) =>
             Error.NotFound("User.BookNotInLibrary", $"Book '{bookId}' is not in the user's library.");
+
+        public static Error ResetTokenNotFound =>
+            Error.NotFound("User.ResetTokenNotFound", "Password reset token is invalid.");
+
+        public static Error ResetTokenExpired =>
+            Error.Validation("User.ResetTokenExpired", "Password reset token has expired.");
+
+        public static Error ResetTokenUsed =>
+            Error.Validation("User.ResetTokenUsed", "Password reset token has already been used.");
     }
 }

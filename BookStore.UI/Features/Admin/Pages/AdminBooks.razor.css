@@ -61,6 +61,23 @@
     box-shadow: var(--shadow-sm);
 }
 
+.admin-book-row.is-inactive {
+    opacity: 0.65;
+    background: var(--background-grouped);
+}
+
+.admin-book-badge {
+    display: inline-block;
+    margin-inline-start: var(--space-2);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--color-red);
+    font-size: var(--text-caption1);
+    font-weight: 600;
+    vertical-align: middle;
+}
+
 .admin-book-cover {
     width: 56px;
     height: 80px;
@@ -143,6 +160,21 @@
 .admin-action-delete {
     background: rgba(255, 59, 48, 0.12);
     color: var(--color-red);
+}
+
+.admin-action-deactivate {
+    background: rgba(255, 149, 0, 0.14);
+    color: var(--color-orange);
+}
+
+.admin-action-activate {
+    background: rgba(52, 199, 89, 0.14);
+    color: var(--color-green);
+}
+
+.admin-action:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
 
 .admin-notice {

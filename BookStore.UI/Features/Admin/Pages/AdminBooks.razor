@@ -36,16 +36,30 @@ else
     <div class="admin-book-list">
         @foreach (var book in _books)
         {
-            <div class="admin-book-row" @key="book.Id">
+            <div class="admin-book-row @(book.IsActive ? "" : "is-inactive")" @key="book.Id">
                 <div class="admin-book-cover">
                     <BookCover Path="@book.CoverImagePath" Alt="book.Title" Eager="true" />
                 </div>
                 <div class="admin-book-info">
-                    <h3 class="admin-book-title">@book.Title</h3>
+                    <h3 class="admin-book-title">
+                        @book.Title
+                        @if (!book.IsActive)
+                        {
+                            <span class="admin-book-badge">غیرفعال</span>
+                        }
+                    </h3>
                     <p class="admin-book-author">@book.Author</p>
                     <span class="admin-book-date">@book.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
                 </div>
                 <div class="admin-book-actions">
+                    <button type="button"
+                            class="admin-action @(book.IsActive ? "admin-action-deactivate" : "admin-action-activate")"
+                            disabled="@(_togglingId == book.Id)"
+                            @onclick="() => ToggleStatusAsync(book)">
+                        @(_togglingId == book.Id
+                            ? (book.IsActive ? "در حال غیرفعال‌سازی..." : "در حال فعال‌سازی...")
+                            : (book.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی"))
+                    </button>
                     <a class="admin-action admin-action-edit" href="admin/edit/@book.Id">ویرایش</a>
                     <button type="button" class="admin-action admin-action-delete" @onclick="() => AskDelete(book)">حذف</button>
                 </div>
@@ -75,9 +89,6 @@ else
 
 @code {
     [Inject]
-    private IBookService BookService { get; set; } = default!;
-
-    [Inject]
     private IAdminBookService AdminBookService { get; set; } = default!;
 
     [Inject]
@@ -87,6 +98,7 @@ else
     private bool _error;
     private BookResponse? _deleteTarget;
     private bool _isDeleting;
+    private Guid? _togglingId;
     private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
@@ -98,7 +110,8 @@ else
     {
         _error = false;
         _books = null;
-        _books = await BookService.GetBooksAsync(forceRefresh: true);
+        // Admin list includes deactivated books (they are hidden from the public catalog).
+        _books = await AdminBookService.GetBooksAsync();
         _error = _books is null;
     }
 
@@ -111,6 +124,48 @@ else
     private void CancelDelete()
     {
         _deleteTarget = null;
+    }
+
+    private async Task ToggleStatusAsync(BookResponse book)
+    {
+        if (_togglingId is not null)
+        {
+            return;
+        }
+
+        _togglingId = book.Id;
+        _notice = null;
+
+        try
+        {
+            var result = await AdminBookService.SetBookStatusAsync(book.Id, !book.IsActive);
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin"));
+                return;
+            }
+
+            if (result.Success)
+            {
+                _notice = (book.IsActive
+                    ? $"«{book.Title}» غیرفعال شد و از لیست عمومی و کتابخانهٔ کاربران حذف شد."
+                    : $"«{book.Title}» فعال شد و دوباره در لیست عمومی نمایش داده می‌شود.", false);
+                await LoadAsync();
+            }
+            else if (result.Forbidden)
+            {
+                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+            }
+            else
+            {
+                _notice = (result.Message ?? "تغییر وضعیت کتاب ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _togglingId = null;
+        }
     }
 
     private async Task ConfirmDelete()

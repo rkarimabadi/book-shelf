@@ -11,6 +11,7 @@ public class Book : AggregateRoot
     public string Description { get; private set; } = string.Empty;
     public string CoverImagePath { get; private set; } = string.Empty;
     public string FilePath { get; private set; } = string.Empty;
+    public bool IsActive { get; private set; } = true;
     public DateTime CreatedAt { get; private init; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 
@@ -95,5 +96,39 @@ public class Book : AggregateRoot
     public void Delete()
     {
         AddDomainEvent(new BookDeletedEvent(Id, Title));
+    }
+
+    /// <summary>
+    /// Deactivates the book: it disappears from the public list/details/download and from
+    /// every user's library until reactivated.
+    /// </summary>
+    public ErrorOr<Success> Deactivate()
+    {
+        if (!IsActive)
+        {
+            return Result.Success;
+        }
+
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new BookDeactivatedEvent(Id, Title));
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> Activate()
+    {
+        if (IsActive)
+        {
+            return Result.Success;
+        }
+
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new BookActivatedEvent(Id, Title));
+
+        return Result.Success;
     }
 }

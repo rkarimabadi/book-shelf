@@ -123,3 +123,25 @@ public class UserActivatedEvent : UserDomainEvent
         Email = email;
     }
 }
+
+public class PasswordResetRequestedEvent : UserDomainEvent
+{
+    public string Email { get; }
+
+    public PasswordResetRequestedEvent(Guid userId, string email)
+        : base(userId)
+    {
+        Email = email;
+    }
+}
+
+public class PasswordResetCompletedEvent : UserDomainEvent
+{
+    public string Email { get; }
+
+    public PasswordResetCompletedEvent(Guid userId, string email)
+        : base(userId)
+    {
+        Email = email;
+    }
+}

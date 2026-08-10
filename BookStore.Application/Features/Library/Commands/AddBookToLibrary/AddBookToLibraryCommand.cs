@@ -52,6 +52,11 @@ public class AddBookToLibraryCommandHandler : IRequestHandler<AddBookToLibraryCo
             return BookErrors.Validation.NotFound(command.BookId);
         }
 
+        if (!book.IsActive)
+        {
+            return BookErrors.Validation.BookInactive;
+        }
+
         var result = user.AddToLibrary(command.BookId);
         if (result.IsError)
         {

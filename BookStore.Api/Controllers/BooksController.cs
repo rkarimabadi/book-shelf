@@ -1,6 +1,7 @@
 using BookStore.Application.Common.Security;
 using BookStore.Application.Features.Books.Commands.CreateBook;
 using BookStore.Application.Features.Books.Commands.DeleteBook;
+using BookStore.Application.Features.Books.Commands.SetBookStatus;
 using BookStore.Application.Features.Books.Commands.UpdateBook;
 using BookStore.Application.Features.Books.Queries.GetBook;
 using BookStore.Application.Features.Books.Queries.GetBooks;
@@ -27,9 +28,13 @@ public sealed class BooksController : ApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] bool includeInactive = false)
     {
-        var result = await _sender.Send(new GetBooksQuery());
+        // Only admins may list deactivated books (the admin management page); for everyone
+        // else the flag is ignored so the public catalog never leaks hidden books.
+        var showInactive = includeInactive && User.IsInRole(Roles.Admin);
+
+        var result = await _sender.Send(new GetBooksQuery(showInactive));
 
         return result.Match(
             books => Ok(books.Select(book => new BookResponse(
@@ -40,14 +45,17 @@ public sealed class BooksController : ApiController
                 book.CoverImagePath,
                 book.FilePath,
                 book.CreatedAt,
-                book.UpdatedAt))),
+                book.UpdatedAt,
+                book.IsActive))),
             errors => Problem(errors));
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, [FromQuery] bool includeInactive = false)
     {
-        var result = await _sender.Send(new GetBookQuery(id));
+        var showInactive = includeInactive && User.IsInRole(Roles.Admin);
+
+        var result = await _sender.Send(new GetBookQuery(id, showInactive));
 
         return result.Match(
             book => Ok(new BookResponse(
@@ -58,12 +66,13 @@ public sealed class BooksController : ApiController
                 book.CoverImagePath,
                 book.FilePath,
                 book.CreatedAt,
-                book.UpdatedAt)),
+                book.UpdatedAt,
+                book.IsActive)),
             errors => Problem(errors));
     }
 
     [HttpGet("{id:guid}/download")]
-    [Authorize]
+    [Authorize(Policy = Policies.RequireUserRole)]
     public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetBookQuery(id), cancellationToken);
@@ -133,7 +142,8 @@ public sealed class BooksController : ApiController
                     book.CoverImagePath,
                     book.FilePath,
                     book.CreatedAt,
-                    book.UpdatedAt)),
+                    book.UpdatedAt,
+                    book.IsActive)),
             errors => Problem(errors));
     }
 
@@ -180,7 +190,28 @@ public sealed class BooksController : ApiController
                 book.CoverImagePath,
                 book.FilePath,
                 book.CreatedAt,
-                book.UpdatedAt)),
+                book.UpdatedAt,
+                book.IsActive)),
+            errors => Problem(errors));
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Policy = Policies.RequireAdminRole)]
+    public async Task<IActionResult> SetStatus(Guid id, UpdateBookStatusRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new SetBookStatusCommand(id, request.IsActive), cancellationToken);
+
+        return result.Match(
+            book => Ok(new BookResponse(
+                book.Id,
+                book.Title,
+                book.Author,
+                book.Description,
+                book.CoverImagePath,
+                book.FilePath,
+                book.CreatedAt,
+                book.UpdatedAt,
+                book.IsActive)),
             errors => Problem(errors));
     }
 

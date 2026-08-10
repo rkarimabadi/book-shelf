@@ -39,6 +39,54 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         };
+
+        // Copies text to the clipboard. The modern API needs a secure context (https or
+        // localhost); otherwise we fall back to a hidden textarea + execCommand('copy').
+        window.bookstoreCopyText = function (text) {
+            const fallback = function () {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                let ok = false;
+                try {
+                    ok = document.execCommand('copy');
+                } catch (e) {
+                    ok = false;
+                }
+                document.body.removeChild(ta);
+                return ok;
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text)
+                    .then(function () { return true; })
+                    .catch(function () { return fallback(); });
+            }
+            return Promise.resolve(fallback());
+        };
+
+        window.bookstoreCanShare = function () {
+            return typeof navigator.share === 'function';
+        };
+
+        // Invokes the native share sheet (title + URL). Resolves true when shared, false when
+        // the user cancelled or the browser has no share support.
+        window.bookstoreShare = function (title, url) {
+            if (typeof navigator.share !== 'function') {
+                return Promise.resolve(false);
+            }
+            try {
+                return navigator.share({ title: title, url: url })
+                    .then(function () { return true; })
+                    .catch(function () { return false; });
+            } catch (e) {
+                return Promise.resolve(false);
+            }
+        };
     </script>
 </body>
 

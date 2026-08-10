@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using BookStore.Application.Common.Security;
 using BookStore.Application.Features.Library.Commands.AddBookToLibrary;
 using BookStore.Application.Features.Library.Commands.RemoveBookFromLibrary;
 using BookStore.Application.Features.Library.Queries.GetUserLibrary;
@@ -11,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BookStore.Api.Controllers;
 
 [Route("api/library")]
-[Authorize]
+[Authorize(Policy = Policies.RequireUserRole)]
 public sealed class LibraryController : ApiController
 {
     private readonly ISender _sender;

@@ -53,3 +53,25 @@ public class BookDeletedEvent : BookDomainEvent
         Title = title;
     }
 }
+
+public class BookDeactivatedEvent : BookDomainEvent
+{
+    public string Title { get; }
+
+    public BookDeactivatedEvent(Guid bookId, string title)
+        : base(bookId)
+    {
+        Title = title;
+    }
+}
+
+public class BookActivatedEvent : BookDomainEvent
+{
+    public string Title { get; }
+
+    public BookActivatedEvent(Guid bookId, string title)
+        : base(bookId)
+    {
+        Title = title;
+    }
+}

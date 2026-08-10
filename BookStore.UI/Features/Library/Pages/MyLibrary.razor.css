@@ -12,3 +12,81 @@
     color: var(--label-secondary);
     margin: var(--space-2) 0 0;
 }
+
+.library-card {
+    position: relative;
+    height: 100%;
+}
+
+.library-card-remove {
+    position: absolute;
+    inset-inline-end: var(--space-2);
+    top: var(--space-2);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(255, 59, 48, 0.14);
+    color: var(--color-red);
+    font-size: var(--text-subhead);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.library-card-remove:hover:not(:disabled) {
+    background: var(--color-red);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+    transform: scale(1.06);
+}
+
+.library-card-remove:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.library-card-remove:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 2px;
+}
+
+.library-card-remove:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.library-notice {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-subhead);
+    animation: library-notice-in 0.2s ease;
+}
+
+.library-notice-success {
+    background: rgba(52, 199, 89, 0.1);
+    border: 1px solid rgba(52, 199, 89, 0.35);
+    color: var(--color-green);
+}
+
+.library-notice-error {
+    background: rgba(255, 59, 48, 0.08);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: var(--color-red);
+}
+
+@keyframes library-notice-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

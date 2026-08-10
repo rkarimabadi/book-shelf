@@ -19,6 +19,7 @@ public sealed class UserRepository : IUserRepository
     {
         return _dbContext.Users
             .Include(u => u.RefreshTokens)
+            .Include(u => u.PasswordResetTokens)
             .Include(u => u.LibraryEntries)
             .FirstOrDefault(u => u.Id == id);
     }
@@ -27,6 +28,7 @@ public sealed class UserRepository : IUserRepository
     {
         return _dbContext.Users
             .Include(u => u.RefreshTokens)
+            .Include(u => u.PasswordResetTokens)
             .Include(u => u.LibraryEntries)
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
@@ -35,6 +37,7 @@ public sealed class UserRepository : IUserRepository
     {
         return _dbContext.Users
             .Include(u => u.RefreshTokens)
+            .Include(u => u.PasswordResetTokens)
             .Include(u => u.LibraryEntries)
             .FirstOrDefault(u => u.Email == email.ToLowerInvariant());
     }
@@ -43,8 +46,18 @@ public sealed class UserRepository : IUserRepository
     {
         return _dbContext.Users
             .Include(u => u.RefreshTokens)
+            .Include(u => u.PasswordResetTokens)
             .Include(u => u.LibraryEntries)
             .FirstOrDefault(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken));
+    }
+
+    public User? GetByPasswordResetToken(string hashedToken)
+    {
+        return _dbContext.Users
+            .Include(u => u.RefreshTokens)
+            .Include(u => u.PasswordResetTokens)
+            .Include(u => u.LibraryEntries)
+            .FirstOrDefault(u => u.PasswordResetTokens.Any(token => token.Token == hashedToken));
     }
 
     public void Add(User user)
@@ -79,6 +92,14 @@ public sealed class UserRepository : IUserRepository
                     _dbContext.Entry(libraryEntry).State = EntityState.Added;
                 }
             }
+
+            foreach (var passwordResetToken in user.PasswordResetTokens)
+            {
+                if (!trackedChildren.Contains(passwordResetToken))
+                {
+                    _dbContext.Entry(passwordResetToken).State = EntityState.Added;
+                }
+            }
         }
         finally
         {
@@ -102,6 +123,7 @@ public sealed class UserRepository : IUserRepository
             .Where(u => u.Id == userId)
             .SelectMany(u => u.LibraryEntries)
             .Join(_dbContext.Books, entry => entry.BookId, book => book.Id, (entry, book) => new { entry, book })
+            .Where(joined => joined.book.IsActive) // deactivated books leave every user's library
             .OrderByDescending(joined => joined.entry.AddedAt)
             .Select(joined => new ValueTuple<Book, DateTime>(joined.book, joined.entry.AddedAt))
             .ToListAsync(cancellationToken);

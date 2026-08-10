@@ -56,8 +56,10 @@ else
                 {
                     @if (_isInLibrary)
                     {
-                        <button type="button" class="book-action book-action-added" disabled>
-                            <span aria-hidden="true">✓</span> در کتابخانهٔ شماست
+                        <button type="button" class="book-action book-action-remove"
+                                disabled="@_isBusy"
+                                @onclick="AskRemoveFromLibrary">
+                            حذف از کتابخانه
                         </button>
                     }
                     else
@@ -74,6 +76,21 @@ else
                     <button type="button" class="book-action book-action-add"
                             @onclick="QueueAddAndRedirectToLogin">افزودن به کتابخانه</button>
                 }
+
+                <button type="button" class="book-action book-action-copy"
+                        disabled="@_isSharing"
+                        @onclick="CopyLinkAsync">
+                    کپی لینک
+                </button>
+
+                @if (_canShare)
+                {
+                    <button type="button" class="book-action book-action-share"
+                            disabled="@_isSharing"
+                            @onclick="ShareAsync">
+                        اشتراک‌گذاری
+                    </button>
+                }
             </div>
 
             @if (_notice is not null)
@@ -85,6 +102,16 @@ else
         </div>
     </div>
 }
+
+<ConfirmDialog Visible="@_showRemoveConfirm"
+               Title="حذف از کتابخانه"
+               Message="این کتاب از کتابخانهٔ شما حذف شود؟"
+               ConfirmText="حذف"
+               CancelText="انصراف"
+               BusyText="در حال حذف..."
+               IsBusy="@_isBusy"
+               OnConfirm="ConfirmRemoveFromLibraryAsync"
+               OnCancel="() => _showRemoveConfirm = false" />
 
 @code {
     private const string PendingAddKey = "pending_add_book";
@@ -114,6 +141,9 @@ else
     private bool _isInLibrary;
     private bool _isBusy;
     private bool _isDownloading;
+    private bool _showRemoveConfirm;
+    private bool _canShare;
+    private bool _isSharing;
     private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
@@ -122,6 +152,9 @@ else
         await LoadAuthStateAsync();
         await ProcessPendingAddAsync();
         await ProcessPendingDownloadAsync();
+
+        // Native share (Web Share API) is only available on some browsers (mostly mobile).
+        _canShare = await JS.InvokeAsync<bool>("bookstoreCanShare");
     }
 
     private async Task LoadBookAsync()
@@ -192,6 +225,91 @@ else
     }
 
     private Task OnAddClick() => AddToLibraryAsync(fromPending: false);
+
+    private string ShareUrl => Nav.Uri;
+
+    private async Task CopyLinkAsync()
+    {
+        if (_isSharing)
+        {
+            return;
+        }
+
+        _isSharing = true;
+        _notice = null;
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("bookstoreCopyText", ShareUrl);
+            _notice = copied
+                ? ("لینک کتاب کپی شد.", false)
+                : ("کپی لینک ناموفق بود؛ لطفاً به‌صورت دستی کپی کنید.", true);
+        }
+        finally
+        {
+            _isSharing = false;
+        }
+    }
+
+    private async Task ShareAsync()
+    {
+        if (_isSharing)
+        {
+            return;
+        }
+
+        _isSharing = true;
+        _notice = null;
+        try
+        {
+            // Resolves false on cancel or failure — a user cancel is normal, so no error shown.
+            await JS.InvokeAsync<bool>("bookstoreShare", _book?.Title ?? "کتاب", ShareUrl);
+        }
+        finally
+        {
+            _isSharing = false;
+        }
+    }
+
+    private void AskRemoveFromLibrary() => _showRemoveConfirm = true;
+
+    private async Task ConfirmRemoveFromLibraryAsync()
+    {
+        if (_isBusy)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _notice = null;
+
+        try
+        {
+            var result = await BookService.RemoveFromLibraryAsync(Id);
+
+            if (result.Unauthorized)
+            {
+                var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                _isInLibrary = false;
+                _notice = ("کتاب از کتابخانهٔ شما حذف شد.", false);
+            }
+            else
+            {
+                _notice = (result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.", true);
+            }
+
+            _showRemoveConfirm = false;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
 
     private async Task QueueAddAndRedirectToLogin()
     {

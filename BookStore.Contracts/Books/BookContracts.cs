@@ -18,4 +18,8 @@ public record BookResponse(
     string CoverImagePath,
     string FilePath,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    bool IsActive);
+
+public record UpdateBookStatusRequest(
+    bool IsActive);

@@ -5,6 +5,8 @@ namespace BookStore.UI.Features.Books.Services;
 
 public sealed record AddToLibraryResult(bool Success, string? Message, bool Unauthorized = false);
 
+public sealed record RemoveFromLibraryResult(bool Success, string? Message, bool Unauthorized = false);
+
 public sealed record DownloadResult(bool Success, byte[]? Content, string? Message, bool Unauthorized = false);
 
 public interface IBookService
@@ -13,7 +15,7 @@ public interface IBookService
     Task<IReadOnlyList<BookResponse>?> GetBooksAsync(bool forceRefresh = false, CancellationToken cancellationToken = default);
 
     /// <summary>Returns a single book; null when not found or the API call failed.</summary>
-    Task<BookResponse?> GetBookAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<BookResponse?> GetBookAsync(Guid id, bool includeInactive = false, CancellationToken cancellationToken = default);
 
     /// <summary>Returns the current user's library; null when the API call failed.</summary>
     Task<IReadOnlyList<LibraryBookResponse>?> GetMyLibraryAsync(CancellationToken cancellationToken = default);
@@ -23,6 +25,9 @@ public interface IBookService
 
     /// <summary>Adds the book to the current user's library. Success = false + Message on failure.</summary>
     Task<AddToLibraryResult> AddToLibraryAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes the book from the current user's library. Success = false + Message on failure.</summary>
+    Task<RemoveFromLibraryResult> RemoveFromLibraryAsync(Guid bookId, CancellationToken cancellationToken = default);
 
     /// <summary>Downloads the book file for the current user. Success = false + Message on failure.</summary>
     Task<DownloadResult> DownloadBookAsync(Guid bookId, CancellationToken cancellationToken = default);

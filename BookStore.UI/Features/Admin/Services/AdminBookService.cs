@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using BookStore.Contracts.Books;
 using BookStore.UI.Services;
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -15,6 +17,20 @@ public sealed class AdminBookService : IAdminBookService
     public AdminBookService(HttpClient http)
     {
         _http = http;
+    }
+
+    public async Task<IReadOnlyList<BookResponse>?> GetBooksAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<List<BookResponse>>(
+                "api/books?includeInactive=true",
+                cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<AdminBookResult> CreateBookAsync(
@@ -42,6 +58,22 @@ public sealed class AdminBookService : IAdminBookService
         {
             using var content = BuildMultipart(form);
             var response = await _http.PutAsync($"api/books/{id}", content, cancellationToken);
+            return await ToResultAsync(response);
+        }
+        catch
+        {
+            return new AdminBookResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
+    public async Task<AdminBookResult> SetBookStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.PatchAsJsonAsync(
+                $"api/books/{id}/status",
+                new UpdateBookStatusRequest(isActive),
+                cancellationToken);
             return await ToResultAsync(response);
         }
         catch

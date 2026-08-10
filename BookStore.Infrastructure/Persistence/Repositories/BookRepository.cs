@@ -29,6 +29,14 @@ public sealed class BookRepository : IBookRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<List<Book>> GetActiveAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Books
+            .Where(b => b.IsActive)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public void Add(Book book)
     {
         _dbContext.Books.Add(book);

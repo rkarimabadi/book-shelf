@@ -19,6 +19,9 @@ public class User : AggregateRoot
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
+    private readonly List<PasswordResetToken> _passwordResetTokens = new();
+    public IReadOnlyCollection<PasswordResetToken> PasswordResetTokens => _passwordResetTokens.AsReadOnly();
+
     private readonly List<LibraryEntry> _libraryEntries = new();
     public IReadOnlyCollection<LibraryEntry> LibraryEntries => _libraryEntries.AsReadOnly();
 
@@ -155,6 +158,71 @@ public class User : AggregateRoot
 
         refreshToken.Revoke();
         AddDomainEvent(new RefreshTokenRevokedEvent(Id, token));
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> AddPasswordResetToken(string rawToken, DateTime expiresAt)
+    {
+        Guard.Against.NullOrEmpty(rawToken, nameof(rawToken));
+        Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
+
+        var resetToken = PasswordResetToken.Create(rawToken, expiresAt);
+        _passwordResetTokens.Add(resetToken.Value);
+
+        AddDomainEvent(new PasswordResetRequestedEvent(Id, Email));
+
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Invalidates every outstanding reset token for this user so only the most
+    /// recent emailed link can ever be used (old links become invalid immediately).
+    /// </summary>
+    public void InvalidatePasswordResetTokens()
+    {
+        foreach (var token in _passwordResetTokens.Where(token => !token.IsUsed))
+        {
+            token.MarkUsed();
+        }
+    }
+
+    public ErrorOr<Success> ResetPassword(string tokenHash, string newPasswordHash)
+    {
+        Guard.Against.NullOrEmpty(tokenHash, nameof(tokenHash));
+        Guard.Against.NullOrEmpty(newPasswordHash, nameof(newPasswordHash));
+
+        if (!IsActive)
+        {
+            return UserErrors.Validation.UserInactive(Email);
+        }
+
+        var resetToken = _passwordResetTokens.FirstOrDefault(token => token.Token == tokenHash);
+        if (resetToken is null)
+        {
+            return UserErrors.Validation.ResetTokenNotFound;
+        }
+
+        if (resetToken.IsExpired())
+        {
+            return UserErrors.Validation.ResetTokenExpired;
+        }
+
+        if (resetToken.IsUsed)
+        {
+            return UserErrors.Validation.ResetTokenUsed;
+        }
+
+        PasswordHash = newPasswordHash;
+        resetToken.MarkUsed();
+
+        // A changed password invalidates every existing session; force a fresh login.
+        foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))
+        {
+            refreshToken.Revoke();
+        }
+
+        AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
 
         return Result.Success;
     }

@@ -42,11 +42,13 @@ public sealed class BookService : IBookService
         }
     }
 
-    public async Task<BookResponse?> GetBookAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<BookResponse?> GetBookAsync(Guid id, bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await _http.GetFromJsonAsync<BookResponse>($"api/books/{id}", cancellationToken);
+            // includeInactive is only used by the admin edit page; the server ignores it for non-admins.
+            var url = includeInactive ? $"api/books/{id}?includeInactive=true" : $"api/books/{id}";
+            return await _http.GetFromJsonAsync<BookResponse>(url, cancellationToken);
         }
         catch
         {
@@ -88,12 +90,37 @@ public sealed class BookService : IBookService
                 return new AddToLibraryResult(false, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
             }
 
-            var message = await ReadProblemMessageAsync(response);
+            var message = await ReadProblemMessageAsync(response, "افزودن به کتابخانه ناموفق بود؛ دوباره تلاش کنید.");
             return new AddToLibraryResult(false, message);
         }
         catch
         {
             return new AddToLibraryResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
+    public async Task<RemoveFromLibraryResult> RemoveFromLibraryAsync(Guid bookId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.DeleteAsync($"api/library/{bookId}", cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new RemoveFromLibraryResult(true, null);
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new RemoveFromLibraryResult(false, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
+            }
+
+            var message = await ReadProblemMessageAsync(response, "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.");
+            return new RemoveFromLibraryResult(false, message);
+        }
+        catch
+        {
+            return new RemoveFromLibraryResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
         }
     }
 
@@ -114,7 +141,7 @@ public sealed class BookService : IBookService
                 return new DownloadResult(false, null, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
             }
 
-            var message = await ReadProblemMessageAsync(response);
+            var message = await ReadProblemMessageAsync(response, "دانلود کتاب ناموفق بود؛ دوباره تلاش کنید.");
             return new DownloadResult(false, null, message);
         }
         catch
@@ -123,7 +150,7 @@ public sealed class BookService : IBookService
         }
     }
 
-    private static async Task<string> ReadProblemMessageAsync(HttpResponseMessage response)
+    private static async Task<string> ReadProblemMessageAsync(HttpResponseMessage response, string fallback)
     {
         var content = await response.Content.ReadAsStringAsync();
         var message = ProblemDetailsParser.ReadMessage(content);
@@ -134,6 +161,12 @@ public sealed class BookService : IBookService
             return "این کتاب قبلاً به کتابخانهٔ شما اضافه شده است.";
         }
 
-        return message ?? "افزودن به کتابخانه ناموفق بود؛ دوباره تلاش کنید.";
+        if (message is not null &&
+            message.Contains("not in the user's library", StringComparison.OrdinalIgnoreCase))
+        {
+            return "این کتاب در کتابخانهٔ شما نیست.";
+        }
+
+        return message ?? fallback;
     }
 }

@@ -50,7 +50,8 @@ else
             _loadedId = Id;
             _book = null;
             _error = false;
-            _book = await BookService.GetBookAsync(Id);
+            // includeInactive: admins must be able to edit deactivated books.
+            _book = await BookService.GetBookAsync(Id, includeInactive: true);
             _error = _book is null;
         }
     }

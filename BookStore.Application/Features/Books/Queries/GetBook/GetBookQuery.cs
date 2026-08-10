@@ -4,7 +4,7 @@ using MediatR;
 
 namespace BookStore.Application.Features.Books.Queries.GetBook;
 
-public record GetBookQuery(Guid Id) : IRequest<ErrorOr<Book>>;
+public record GetBookQuery(Guid Id, bool IncludeInactive = false) : IRequest<ErrorOr<Book>>;
 
 public class GetBookQueryHandler : IRequestHandler<GetBookQuery, ErrorOr<Book>>
 {
@@ -19,6 +19,13 @@ public class GetBookQueryHandler : IRequestHandler<GetBookQuery, ErrorOr<Book>>
     {
         var book = await _bookRepository.GetByIdAsync(query.Id, cancellationToken);
         if (book is null)
+        {
+            return BookErrors.Validation.NotFound(query.Id);
+        }
+
+        // Public detail/download must treat deactivated books as if they do not exist.
+        // IncludeInactive is only set by the admin edit flow.
+        if (!book.IsActive && !query.IncludeInactive)
         {
             return BookErrors.Validation.NotFound(query.Id);
         }

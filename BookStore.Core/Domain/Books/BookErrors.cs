@@ -14,5 +14,8 @@ public static class BookErrors
 
         public static Error AuthorTooLong =>
             Error.Validation("Book.AuthorTooLong", "Author must not exceed 100 characters.");
+
+        public static Error BookInactive =>
+            Error.Validation("Book.Inactive", "Book is deactivated.");
     }
 }

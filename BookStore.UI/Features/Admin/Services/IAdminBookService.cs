@@ -1,3 +1,4 @@
+using BookStore.Contracts.Books;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace BookStore.UI.Features.Admin.Services;
@@ -19,9 +20,14 @@ public sealed record BookFormSubmit(
 
 public interface IAdminBookService
 {
+    /// <summary>All books incl. deactivated ones (server ignores the flag for non-admins).</summary>
+    Task<IReadOnlyList<BookResponse>?> GetBooksAsync(CancellationToken cancellationToken = default);
+
     Task<AdminBookResult> CreateBookAsync(BookFormSubmit form, CancellationToken cancellationToken = default);
 
     Task<AdminBookResult> UpdateBookAsync(Guid id, BookFormSubmit form, CancellationToken cancellationToken = default);
 
     Task<AdminBookResult> DeleteBookAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<AdminBookResult> SetBookStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default);
 }

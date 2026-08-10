@@ -8,6 +8,13 @@
     <p class="library-subtitle">کتاب‌هایی که ذخیره کرده‌اید</p>
 </div>
 
+@if (_notice is not null)
+{
+    <div class="library-notice @(_notice.Value.IsError ? "library-notice-error" : "library-notice-success")" role="status">
+        @_notice.Value.Text
+    </div>
+}
+
 @if (_error)
 {
     <ErrorNotice Title="دریافت کتابخانه ناموفق بود"
@@ -41,18 +48,45 @@ else
         @foreach (var book in _books)
         {
             <div class="col">
-                <BookCard Book="book" />
+                <div class="library-card">
+                    <BookCard Book="book" />
+                    <button type="button"
+                            class="library-card-remove"
+                            aria-label="حذف «@book.Title» از کتابخانه"
+                            title="حذف از کتابخانه"
+                            disabled="@(_removingId == book.Id)"
+                            @onclick="() => AskRemove(book)">
+                        <span aria-hidden="true">✕</span>
+                    </button>
+                </div>
             </div>
         }
     </div>
 }
 
+<ConfirmDialog Visible="@(_pendingRemove is not null)"
+               Title="حذف از کتابخانه"
+               Message="@(_pendingRemove is null ? string.Empty : $"«{_pendingRemove.Title}» از کتابخانهٔ شما حذف شود؟")"
+               ConfirmText="حذف"
+               CancelText="انصراف"
+               BusyText="در حال حذف..."
+               IsBusy="@_isRemoving"
+               OnConfirm="ConfirmRemoveAsync"
+               OnCancel="CancelRemove" />
+
 @code {
     [Inject]
     private IBookService BookService { get; set; } = default!;
 
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
     private IReadOnlyList<BookResponse>? _books;
     private bool _error;
+    private BookResponse? _pendingRemove;
+    private Guid? _removingId;
+    private bool _isRemoving;
+    private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,7 +113,61 @@ else
                 entry.CoverImagePath,
                 entry.FilePath,
                 entry.AddedAt,
-                entry.AddedAt))
+                entry.AddedAt,
+                IsActive: true)) // deactivated books are filtered out server-side
             .ToList();
+    }
+
+    private void AskRemove(BookResponse book)
+    {
+        _pendingRemove = book;
+        _removingId = book.Id;
+    }
+
+    private void CancelRemove()
+    {
+        _pendingRemove = null;
+        _removingId = null;
+    }
+
+    private async Task ConfirmRemoveAsync()
+    {
+        if (_pendingRemove is null || _isRemoving)
+        {
+            return;
+        }
+
+        var book = _pendingRemove;
+        _isRemoving = true;
+        _notice = null;
+
+        try
+        {
+            var result = await BookService.RemoveFromLibraryAsync(book.Id);
+
+            if (result.Unauthorized)
+            {
+                var returnUrl = Uri.EscapeDataString("/library");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                _books = _books?.Where(b => b.Id != book.Id).ToList();
+                _notice = ($"«{book.Title}» از کتابخانهٔ شما حذف شد.", false);
+            }
+            else
+            {
+                _notice = (result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.", true);
+            }
+
+            _pendingRemove = null;
+        }
+        finally
+        {
+            _isRemoving = false;
+            _removingId = null;
+        }
     }
 }

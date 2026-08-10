@@ -9,6 +9,7 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     User? GetByEmail(string email);
     User? GetByRefreshToken(string refreshToken);
+    User? GetByPasswordResetToken(string hashedToken);
     void Add(User user);
     void Update(User user);
     void Delete(User user);
