@@ -97,9 +97,9 @@ The solution follows Clean Architecture principles with Domain-Driven Design:
 - One entry point / one origin: `BookStore.Api` serves both `/api/*` (controllers) and the WASM app at `/`
 - `BookStore.Api/Program.cs`: `UseBlazorFrameworkFiles()` + `UseStaticFiles()` + `MapFallbackToFile("index.html")` (+ dev-only `UseWebAssemblyDebugging()`); requires `Microsoft.AspNetCore.Components.WebAssembly.Server` package
 - Run with `dotnet run --project BookStore.Api` (or the `http`/`https` launch profiles) — the WASM client is served at the same URL as the API (http://localhost:5114 / https://localhost:7293; Swagger at `/swagger`)
-- **Structure**: `Pages/` (Home, Login, Register), `Layout/` (MainLayout + scoped CSS, Persian RTL), `Services/` (`AuthenticationService` + `IAuthenticationService`, `AuthStateProvider`, `ClientStorageService` + `IClientStorageService`, `AuthenticatedHttpClientHandler`, `ProblemDetailsParser` shared helper), `Features/` (feature-driven: `Books/`, `Admin/` — each with `Pages/`, `Components/`, `Services/`), `Shared/Components/` (LoadingSpinner, EmptyState, ErrorNotice, ConfirmDialog, AccessDenied), `wwwroot/` (index.html, css/app.css, bootstrap in lib/)
+- **Structure**: `Pages/` (Home, Login, Register), `Layout/` (MainLayout + scoped CSS, Persian RTL), `Services/` (`AuthenticationService` + `IAuthenticationService`, `AuthStateProvider`, `ClientStorageService` + `IClientStorageService`, `AuthenticatedHttpClientHandler`, `ProblemDetailsParser` shared helper), `Features/` (feature-driven: `Books/` and `Admin/` each with `Pages/` + `Components/` + `Services/`; `Library/` with `Pages/` only, reusing Books' components/services), `Shared/Components/` (LoadingSpinner, EmptyState, ErrorNotice, ConfirmDialog, AccessDenied), `wwwroot/` (index.html, css/app.css, bootstrap in lib/)
 - **Auth flow**: login/register post to the API, then `AuthStateProvider.SignInAsync` persists `auth_token`/`refresh_token` in localStorage (`IJSRuntime`) and raises `NotifyAuthenticationStateChanged`. `AuthStateProvider.ParseToken` decodes the JWT payload (base64url) and builds `ClaimsPrincipal` (email/role/given_name/family_name); expired tokens → anonymous.
-- `MainLayout` uses `<AuthorizeView>` (needs `AddAuthorizationCore` + `AddCascadingAuthenticationState` in `Program.cs`) to switch between "ورود/ثبتنام" links and the logged-in user + logout button; an admin-only `مدیریت` nav link renders inside `<AuthorizeView Roles="Admin">`.
+- `MainLayout` uses `<AuthorizeView>` (needs `AddAuthorizationCore` + `AddCascadingAuthenticationState` in `Program.cs`) to switch between "ورود/ثبتنام" links and the logged-in user + logout button. Nav links: `کتابخانه` for every authenticated user (inside `<AuthorizeView>`), and admin-only `مدیریت` inside `<AuthorizeView Roles="Admin">`.
 - `App.razor` uses `<AuthorizeRouteView>` (not plain `RouteView`) with a `<NotAuthorized>` template → `AccessDenied` component: anonymous users are redirected to `/login?returnUrl=...`; authenticated non-admins see a Persian access-denied message. Admin pages carry `@attribute [Authorize(Roles = "Admin")]`.
 - PWA capabilities (planned)
 
@@ -273,16 +273,23 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 10. **Login `returnUrl` values must start with `/`.** `Login.razor` only honors `ReturnUrl` when it `StartsWith('/')`, so building one from `NavigationManager.ToBaseRelativePath` (which yields `admin`, no leading slash) silently sends the user home after login. Fix: prefix `"/"` before escaping (`Uri.EscapeDataString("/" + relativePath.TrimStart('/'))`).
 11. **Blazor reuses a page instance when navigating between two URLs that match the same route template** (e.g. `/admin/edit/A` → `/admin/edit/B`), so `OnInitializedAsync` never re-runs and the page shows stale data. Fix: reload in `OnParametersSetAsync` keyed on a last-seen id (`if (Id != _loadedId) { _loadedId = Id; ... }`); child components with prefill state need the same id-guard (see `BookForm._prefilledForId`).
 
-## Next Steps
+## MVP Status
 
-1. Build API endpoints (controllers, JWT validation) — DONE
-2. Implement user library management (add to library, list user's books) — DONE
-3. Create book management domain entities — DONE
-4. Add validation and error handling (API-level) — DONE
-5. Blazor WebAssembly UI: project + register/login pages + home page — DONE (hosted in BookStore.Api, served at `/`)
-6. Public books UI (list + details + add-to-library) — DONE
-7. Admin content-management UI (add/edit/delete books at `/admin`, `/admin/add`, `/admin/edit/{id}`, role-guarded) — DONE
-8. User library UI page (`/library` — list user's saved books) — DONE
+All MUST-HAVE items from `book/MVP Scope Document.md` are implemented and verified (audit passed: every feature maps to real pages/services, no TODOs/stubs, build 0 warnings/0 errors):
+
+- **احراز هویت** — ثبتنام/ورود/خروج — DONE (`Register.razor`, `Login.razor`, `MainLayout.razor`)
+- **کتابها (عمومی)** — Home + books list + book details (با دانلود و افزودن به کتابخانه) — DONE (`Home.razor`, `BooksList.razor`, `BookDetails.razor`)
+- **کتابخانهٔ کاربر** — افزودن به کتابخانه + لیست کتابهای کاربر — DONE (`BookDetails.razor`, `MyLibrary.razor`)
+- **مدیریت محتوا (ادمین)** — افزودن/ویرایش/حذف کتاب — DONE (`AdminBooks.razor`, `AdminBookAdd.razor`, `AdminBookEdit.razor`)
+- **مسیرهای شرطی** — هدایت هوشمند ناشناس (anonymous → login → auto-add) — DONE (`BookDetails.razor` pending-add flow)
+
+## Next Steps (SHOULD HAVE candidates)
+
+1. حذف از کتابخانه (remove from library) — backend `DELETE /api/library/{bookId}` exists; add a remove button in `/library` (or book details) with ConfirmDialog
+2. جستجوی ساده (title search box on `/books`, client-side filter)
+3. صفحهبندی (pagination for the books list)
+4. بازیابی رمز عبور (forgot-password via email)
+5. پیامهای عملیاتی (Toast/Notification component)
 
 ### Migrations
 
