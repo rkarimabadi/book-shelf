@@ -6,11 +6,11 @@
 }
 else
 {
-    <img class="cover-image"
-         src="@IBookService.MediaUrl(Path)"
-         alt="@Alt"
-         loading="@(Eager ? "eager" : "lazy")"
-         @onerror="HandleImageError" />
+<img class="cover-image"
+          src="@IBookService.MediaUrl(Path)"
+          alt="@Alt"
+          loading="@(Eager ? "eager" : "lazy")"
+          @onerror="HandleImageError" />
 }
 
 @code {
@@ -22,6 +22,9 @@ else
 
     [Parameter]
     public bool Eager { get; set; }
+
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
 
     private bool _failed;
 

@@ -6,11 +6,11 @@ namespace BookStore.Core.Domain.Books;
 
 public class Book : AggregateRoot
 {
-    public string Title { get; private set; }
-    public string Author { get; private set; }
-    public string Description { get; private set; }
-    public string CoverImagePath { get; private set; }
-    public string FilePath { get; private set; }
+    public string Title { get; private set; } = string.Empty;
+    public string Author { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
+    public string CoverImagePath { get; private set; } = string.Empty;
+    public string FilePath { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private init; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 

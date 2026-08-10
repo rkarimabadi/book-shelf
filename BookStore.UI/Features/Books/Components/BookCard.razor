@@ -12,7 +12,7 @@ else
 {
     <NavLink class="book-card" href="@($"/books/{Book.Id}")">
         <div class="details-cover">
-            <BookCover Path="Book.CoverImagePath" Alt="Book.Title" />
+            <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" />
         </div>
         <div class="book-card-body">
             <h3 class="book-card-title">@Book.Title</h3>

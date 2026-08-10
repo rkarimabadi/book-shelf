@@ -6,11 +6,11 @@ namespace BookStore.Core.Domain.Users;
 
 public class User : AggregateRoot
 {
-    public Guid Id { get; private init; } = Guid.NewGuid();
-    public string Email { get; private set; }
-    public string PasswordHash { get; private set; }
-    public string FirstName { get; private set; }
-    public string LastName { get; private set; }
+    public new Guid Id { get; private init; } = Guid.NewGuid();
+    public string Email { get; private set; } = string.Empty;
+    public string PasswordHash { get; private set; } = string.Empty;
+    public string FirstName { get; private set; } = string.Empty;
+    public string LastName { get; private set; } = string.Empty;
     public UserRole Role { get; private set; }
     public DateTime CreatedAt { get; private init; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; private set; }

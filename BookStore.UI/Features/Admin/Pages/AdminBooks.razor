@@ -38,7 +38,7 @@ else
         {
             <div class="admin-book-row" @key="book.Id">
                 <div class="admin-book-cover">
-                    <BookCover Path="book.CoverImagePath" Alt="book.Title" Eager="true" />
+                    <BookCover Path="@book.CoverImagePath" Alt="book.Title" Eager="true" />
                 </div>
                 <div class="admin-book-info">
                     <h3 class="admin-book-title">@book.Title</h3>
