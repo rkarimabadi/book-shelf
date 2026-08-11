@@ -145,3 +145,29 @@ public class PasswordResetCompletedEvent : UserDomainEvent
         Email = email;
     }
 }
+
+public class PasswordChangedEvent : UserDomainEvent
+{
+    public string Email { get; }
+
+    public PasswordChangedEvent(Guid userId, string email)
+        : base(userId)
+    {
+        Email = email;
+    }
+}
+
+public class UserRoleChangedEvent : UserDomainEvent
+{
+    public string Email { get; }
+    public UserRole OldRole { get; }
+    public UserRole NewRole { get; }
+
+    public UserRoleChangedEvent(Guid userId, string email, UserRole oldRole, UserRole newRole)
+        : base(userId)
+    {
+        Email = email;
+        OldRole = oldRole;
+        NewRole = newRole;
+    }
+}

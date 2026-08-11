@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using BookStore.Application.Common.Security;
+using BookStore.Application.Features.Authentication.Commands.ChangePassword;
 using BookStore.Application.Features.Authentication.Commands.ForgotPassword;
 using BookStore.Application.Features.Authentication.Commands.Login;
 using BookStore.Application.Features.Authentication.Commands.Logout;
@@ -97,6 +98,24 @@ public sealed class AuthController : ApiController
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var command = new ResetPasswordCommand(request.Email, request.Token, request.NewPassword);
+        var result = await _sender.Send(command, cancellationToken);
+
+        return result.Match(
+            _ => NoContent(),
+            errors => Problem(errors));
+    }
+
+    [HttpPost("change-password")]
+    [Authorize(Policy = Policies.RequireUserRole)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        var email = User.FindFirstValue(JwtRegisteredClaimNames.Email);
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Email claim is missing from the token.");
+        }
+
+        var command = new ChangePasswordCommand(email, request.CurrentPassword, request.NewPassword);
         var result = await _sender.Send(command, cancellationToken);
 
         return result.Match(

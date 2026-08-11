@@ -1,0 +1,272 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IAdminUserService AdminUserService
+@inject NavigationManager Nav
+
+<PageTitle>مدیریت کاربران</PageTitle>
+
+<div class="admin-header">
+    <div>
+        <h1 class="admin-title">مدیریت کاربران</h1>
+        <p class="admin-subtitle">مشاهدهٔ کاربران، تغییر نقش، فعال/غیرفعال کردن و حذف حساب</p>
+    </div>
+</div>
+
+@if (_error)
+{
+    <ErrorNotice Title="دریافت کاربران ناموفق بود"
+                 Message="ارتباط با سرور برقرار نشد؛ لطفاً دوباره تلاش کنید."
+                 Retry="LoadAsync" />
+}
+else if (_users is null)
+{
+    <LoadingSpinner Text="در حال بارگذاری کاربران..." />
+}
+else if (_users.Count == 0)
+{
+    <EmptyState Title="هنوز کاربری ثبت نشده است"
+                Message="وقتی کاربری ثبت‌نام کند، اینجا نمایش داده می‌شود."
+                Icon="👤" />
+}
+else
+{
+    <div class="admin-user-list">
+        @foreach (var user in _users)
+        {
+            <div class="admin-user-row @(user.IsActive ? "" : "is-inactive")" @key="user.Id">
+                <div class="admin-user-avatar">
+                    @GetInitials(user)
+                </div>
+                <div class="admin-user-info">
+                    <h3 class="admin-user-name">
+                        @user.FirstName @user.LastName
+                        @if (user.IsActive == false)
+                        {
+                            <span class="admin-user-badge">مسدود</span>
+                        }
+                    </h3>
+                    <p class="admin-user-email">@user.Email</p>
+                    <span class="admin-user-date">عضویت: @user.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
+                </div>
+                <div class="admin-user-actions">
+                    <span class="admin-role-badge @(user.Role == "Admin" ? "role-admin" : "role-user")">
+                        @(user.Role == "Admin" ? "ادمین" : "کاربر")
+                    </span>
+                    @if (user.Id == _currentUserId)
+                    {
+                        <span class="admin-user-self">حساب شما</span>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="admin-action @(user.Role == "Admin" ? "admin-action-edit" : "admin-action-activate")"
+                                disabled="@(_busyId == user.Id)"
+                                @onclick="() => ToggleRoleAsync(user)">
+                            @(_busyId == user.Id
+                                ? "در حال تغییر..."
+                                : (user.Role == "Admin" ? "تبدیل به کاربر" : "ارتقا به ادمین"))
+                        </button>
+                        <button type="button"
+                                class="admin-action @(user.IsActive ? "admin-action-deactivate" : "admin-action-activate")"
+                                disabled="@(_busyId == user.Id)"
+                                @onclick="() => ToggleStatusAsync(user)">
+                            @(_busyId == user.Id
+                                ? "در حال تغییر..."
+                                : (user.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی"))
+                        </button>
+                        <button type="button" class="admin-action admin-action-delete" @onclick="() => AskDelete(user)">حذف</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_deleteTarget is not null)
+{
+    <ConfirmDialog Visible="true"
+                   Title="حذف کاربر"
+                   Message="@($"آیا از حذف «{_deleteTarget.FirstName} {_deleteTarget.LastName}» مطمئن هستید؟ کتابخانه و تمام اطلاعات این کاربر حذف می‌شود.")"
+                   ConfirmText="حذف"
+                   BusyText="در حال حذف..."
+                   IsBusy="_isDeleting"
+                   OnConfirm="ConfirmDelete"
+                   OnCancel="CancelDelete" />
+}
+
+@if (_notice is not null)
+{
+    <div class="admin-notice @(_notice.Value.IsError ? "notice-error" : "notice-success")" role="status">
+        @_notice.Value.Text
+    </div>
+}
+
+@code {
+    private IReadOnlyList<UserResponse>? _users;
+    private bool _error;
+    private UserResponse? _deleteTarget;
+    private bool _isDeleting;
+    private Guid? _busyId;
+    private Guid? _currentUserId;
+    private (string Text, bool IsError)? _notice;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var sub = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _currentUserId = Guid.TryParse(sub, out var id) ? id : null;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        _users = null;
+        _users = await AdminUserService.GetUsersAsync();
+        _error = _users is null;
+    }
+
+    private static string GetInitials(UserResponse user)
+    {
+        var first = string.IsNullOrWhiteSpace(user.FirstName) ? string.Empty : user.FirstName[..1];
+        var last = string.IsNullOrWhiteSpace(user.LastName) ? string.Empty : user.LastName[..1];
+        return $"{first}{last}".Trim();
+    }
+
+    private void AskDelete(UserResponse user)
+    {
+        _deleteTarget = user;
+        _notice = null;
+    }
+
+    private void CancelDelete()
+    {
+        _deleteTarget = null;
+    }
+
+    private async Task ToggleStatusAsync(UserResponse user)
+    {
+        if (_busyId is not null)
+        {
+            return;
+        }
+
+        _busyId = user.Id;
+        _notice = null;
+
+        try
+        {
+            var result = await AdminUserService.SetUserStatusAsync(user.Id, !user.IsActive);
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/users"));
+                return;
+            }
+
+            if (result.Success)
+            {
+                _notice = (user.IsActive
+                    ? $"حساب «{user.FirstName} {user.LastName}» مسدود شد و از سیستم خارج می‌شود."
+                    : $"حساب «{user.FirstName} {user.LastName}» دوباره فعال شد.", false);
+                await LoadAsync();
+            }
+            else if (result.Forbidden)
+            {
+                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+            }
+            else
+            {
+                _notice = (result.Message ?? "تغییر وضعیت کاربر ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private async Task ToggleRoleAsync(UserResponse user)
+    {
+        if (_busyId is not null)
+        {
+            return;
+        }
+
+        _busyId = user.Id;
+        _notice = null;
+
+        try
+        {
+            var newRole = user.Role == "Admin" ? "User" : "Admin";
+            var result = await AdminUserService.SetUserRoleAsync(user.Id, newRole);
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/users"));
+                return;
+            }
+
+            if (result.Success)
+            {
+                _notice = ($"نقش «{user.FirstName} {user.LastName}» به {(newRole == "Admin" ? "ادمین" : "کاربر")} تغییر کرد.", false);
+                await LoadAsync();
+            }
+            else if (result.Forbidden)
+            {
+                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+            }
+            else
+            {
+                _notice = (result.Message ?? "تغییر نقش کاربر ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_deleteTarget is null || _isDeleting)
+        {
+            return;
+        }
+
+        _isDeleting = true;
+        try
+        {
+            var result = await AdminUserService.DeleteUserAsync(_deleteTarget.Id);
+
+            if (result.Unauthorized)
+            {
+                _deleteTarget = null;
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/users"));
+                return;
+            }
+
+            _deleteTarget = null;
+
+            if (result.Success)
+            {
+                _notice = ("کاربر با موفقیت حذف شد.", false);
+                await LoadAsync();
+            }
+            else if (result.Forbidden)
+            {
+                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+            }
+            else
+            {
+                _notice = (result.Message ?? "حذف کاربر ناموفق بود.", true);
+            }
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+}

@@ -7,33 +7,48 @@
     <a class="app-brand" href="">
         <img class="app-logo" src="/images/app/header-logo.png" alt="قفسه کتاب" />
     </a>
-    <nav class="app-nav">
-        <NavLink href="" Match="NavLinkMatch.All">خانه</NavLink>
-        <NavLink href="books">کتاب‌ها</NavLink>
-        <AuthorizeView>
-            <Authorized>
-                <NavLink href="library">کتابخانه</NavLink>
-            </Authorized>
-        </AuthorizeView>
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <NavLink href="admin">مدیریت</NavLink>
-            </Authorized>
-        </AuthorizeView>
-    </nav>
-    <div class="app-auth">
-        <AuthorizeView>
-            <Authorized Context="auth">
-                <span class="app-user">سلام، @auth.User.Identity?.Name</span>
-                <button type="button" class="app-logout" @onclick="HandleLogout" disabled="@IsLoggingOut">
-                    @(IsLoggingOut ? "در حال خروج..." : "خروج")
-                </button>
-            </Authorized>
-            <NotAuthorized>
-                <NavLink class="app-link" href="login">ورود</NavLink>
-                <NavLink class="app-link" href="register">ثبت‌نام</NavLink>
-            </NotAuthorized>
-        </AuthorizeView>
+
+    <button type="button"
+            class="menu-toggle @(_menuOpen ? "is-open" : "")"
+            aria-label="باز و بسته کردن منو"
+            aria-expanded="@_menuOpen"
+            @onclick="ToggleMenu">
+        <span class="menu-toggle-bar"></span>
+        <span class="menu-toggle-bar"></span>
+        <span class="menu-toggle-bar"></span>
+    </button>
+
+    <div class="app-menu @(_menuOpen ? "is-open" : "")">
+        <nav class="app-nav">
+            <NavLink href="" Match="NavLinkMatch.All" @onclick="CloseMenu">خانه</NavLink>
+            <NavLink href="books" @onclick="CloseMenu">کتاب‌ها</NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink href="library" @onclick="CloseMenu">کتابخانه</NavLink>
+                    <NavLink href="change-password" @onclick="CloseMenu">تغییر رمز</NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="Admin">
+                <Authorized>
+                    <NavLink href="admin" @onclick="CloseMenu">مدیریت</NavLink>
+                    <NavLink href="admin/users" @onclick="CloseMenu">کاربران</NavLink>
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+        <div class="app-auth">
+            <AuthorizeView>
+                <Authorized Context="auth">
+                    <span class="app-user">سلام، @auth.User.Identity?.Name</span>
+                    <button type="button" class="app-logout" @onclick="HandleLogout" disabled="@IsLoggingOut">
+                        @(IsLoggingOut ? "در حال خروج..." : "خروج")
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="app-link" href="login" @onclick="CloseMenu">ورود</NavLink>
+                    <NavLink class="app-link" href="register" @onclick="CloseMenu">ثبت‌نام</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
     </div>
 </div>
 
@@ -43,6 +58,17 @@
 
 @code {
     private bool IsLoggingOut;
+    private bool _menuOpen;
+
+    private void ToggleMenu()
+    {
+        _menuOpen = !_menuOpen;
+    }
+
+    private void CloseMenu()
+    {
+        _menuOpen = false;
+    }
 
     private async Task HandleLogout()
     {
@@ -56,6 +82,7 @@
         {
             var refreshToken = AuthState.CurrentSession?.RefreshToken ?? string.Empty;
             await AuthService.LogoutAsync(refreshToken);
+            _menuOpen = false;
             Nav.NavigateTo("/");
         }
         finally

@@ -11,7 +11,6 @@ public interface IAuthenticationService
     ErrorOr<Success> LogoutUser(string refreshToken);
     ErrorOr<(User User, string ResetToken)> RequestPasswordReset(string email);
     ErrorOr<Success> ResetPassword(string email, string resetToken, string newPasswordHash);
+    ErrorOr<Success> ChangePassword(string email, string newPasswordHash);
     ErrorOr<User> GetUserByEmail(string email);
-    ErrorOr<Success> DeactivateUser(string email);
-    ErrorOr<Success> ActivateUser(string email);
 }

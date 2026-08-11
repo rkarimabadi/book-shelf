@@ -255,6 +255,25 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **UI:** `ForgotPassword.razor` (`/forgot-password`, generic success message) + `ResetPassword.razor` (`/reset-password?email=&token=` - new password + confirm), forgot-password link on `Login.razor`; auth-card styling + `.auth-success`/`.auth-links`/`.auth-button-link` in `app.css`
 - Verified E2E with a fake SMTP sink: forgot -> 204, email captured with the link, reset -> 204, login with new password -> 200, old password -> 401, token replay -> 400, unknown-email forgot -> 204, re-forgot invalidates the previous token
 
+## Change Password Status (SH-08 - تغییر رمز عبور)
+
+- **Domain (Core):** `User.ChangePassword(newPasswordHash)` — rejects inactive users, sets the new hash, revokes ALL refresh tokens (forces re-login) and fires `PasswordChangedEvent`. The current-password verification lives in the handler because PBKDF2 hashes are salted (pitfall 2) — the domain cannot re-verify a plaintext password.
+- **Application:** `Features/Authentication/Commands/ChangePassword/` (command + validator + handler): handler loads the user via `IAuthenticationService.GetUserByEmail`, verifies the current password with `IPasswordHasher.VerifyPassword(current, storedHash)` (mismatch → 400 `User.InvalidCurrentPassword`), hashes the new password, calls `IAuthenticationService.ChangePassword(email, newHash)` and persists via `IUnitOfWork`
+- **API:** `POST /api/auth/change-password` (`[Authorize(Policy = Policies.RequireUserRole)]`) — identity taken from the JWT `email` claim, not the body; 204 on success; 401 if the claim is missing
+- **UI:** `ChangePassword.razor` (`/change-password`, `[Authorize]` → anonymous users hit `/login`): current/new/confirm fields with client-side validation, maps the wrong-current-password error to «رمز عبور فعلی اشتباه است.», and after success signs the user out locally (`LogoutAsync` + redirect to `/login`) since the server revoked every refresh token. «تغییر رمز» nav link added to `MainLayout` inside the `<AuthorizeView>` (all authenticated users)
+- No migration required (no schema change)
+- Verified via API smoke test: anonymous → 401 · wrong current password → 400 with `User.InvalidCurrentPassword` · change → 204 · old-password login → 401 · new-password login → 200 · refresh with the pre-change token → 401 (revoked, proving forced re-login)
+
+## Admin User Management Status (SH-07 - مدیریت کاربران)
+
+- **Domain (Core):** `User.ChangeRole(role)` (same-role → 409 `User.RoleAlreadySet`, invalid → 400 `User.InvalidRole`, fires `UserRoleChangedEvent`); `User.Deactivate()` now also revokes every refresh token so a blocked account loses its sessions. Errors: `User.NotFound` (by id), `User.CannotModifySelf` (409). Removed the unused `DeactivateUser(email)`/`ActivateUser(email)` service methods — handlers call `IUserRepository` directly (same pattern as `SetBookStatusCommand`)
+- **Application:** `Features/Users/` — `Queries/GetUsers/` (list all, newest-first) + `Commands/SetUserStatus/`, `Commands/SetUserRole/`, `Commands/DeleteUser/` (command + validator + handler each). Handlers: load via `IUserRepository.GetByIdAsync`, block any mutation of the caller's own account (`CannotModifySelf`), persist via `IUnitOfWork`; delete relies on FK cascade for refresh/password-reset tokens and library entries (books untouched)
+- **Infrastructure:** `UserRepository.GetUsersAsync` (AsNoTracking, ordered by `CreatedAt` desc) — `GetByIdAsync`/`Delete` already existed
+- **API:** `UsersController` (`/api/users`, every endpoint `[Authorize(Policy = Policies.RequireAdminRole)]`): `GET` list → `UserResponse` · `PATCH {id}/status` (body `{ isActive }`) → 204 · `PATCH {id}/role` (body `{ role }`, invalid → 400) → 204 · `DELETE {id}` → 204. Current admin id from JWT `sub` claim (missing → 401)
+- **UI:** `Features/Admin/Pages/AdminUsers.razor` (`/admin/users`, `[Authorize(Roles = "Admin")]`): rows with avatar initials, name/email/join date, role badge + ارتقا/تبدیل button, مسدود/فعال toggle, حذف with `ConfirmDialog`; the admin's own row shows «حساب شما» with no actions. `IAdminUserService`/`AdminUserService` (401 → login redirect, 403 → Persian denial, Persian mapping for `User.NotFound`/`CannotModifySelf`/`RoleAlreadySet`); «کاربران» nav link added for admins. `AuthStateProvider.ParseToken` now also emits the `sub` claim as `ClaimTypes.NameIdentifier` (used to detect the self-row)
+- No migration required (no schema change)
+- Verified via API smoke test: anon list 401 · non-admin list 403 · admin list 200 · deactivate 204 (+ blocked user's login → 401, `IsActive=false` in list) · reactivate 204 · role change 204 · same role again 409 · self status/role/delete all 409 · missing user 404 · invalid role 400 · delete 204 (user vanishes from list) · DB check: zero orphaned `RefreshToken`/`LibraryEntry` rows after delete (cascade works)
+
 ## Public Books UI Status
 
 - **Pages:** `Features/Books/Pages/BooksList.razor` (`/books` — responsive card grid, skeleton loading, EmptyState/ErrorNotice states), `BookDetails.razor` (`/books/{id:guid}` — cover, title, author, description, دانلود button, auth-aware افزودن به کتابخانه)
@@ -319,7 +338,7 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 Features are tracked in `book/MVP Scope Document.md` with stable **codes** for prompt references: `MH-*` (MUST), `SH-*` (SHOULD), `CH-*` (COULD), `WH-*` (WON'T) — e.g. «implement SH-02». Build is clean (0 warnings / 0 errors).
 
 - **MUST HAVE — 11/11 done (MH-01..MH-12):** ثبت‌نام/ورود/خروج (`Register.razor`, `Login.razor`, `MainLayout.razor`) · Home + books list + details with دانلود/افزودن به کتابخانه (`Home.razor`, `BooksList.razor`, `BookDetails.razor`) · افزودن به کتابخانه + لیست کتاب‌های کاربر (`BookDetails.razor`, `MyLibrary.razor`) · افزودن/ویرایش/حذف کتاب (ادمین) (`AdminBooks.razor`, `AdminBookAdd.razor`, `AdminBookEdit.razor`) · هدایت هوشمند ناشناس — anonymous → login → auto-add / auto-download (`BookDetails.razor` pending flows)
-- **SHOULD HAVE — 3/6 done:** `SH-01` حذف از کتابخانه · `SH-04` بازیابی رمز عبور · `SH-05` فعال/غیرفعال کردن کتاب — remaining: `SH-02` جستجو، `SH-03` صفحه‌بندی، `SH-06` Toast/Notification
+- **SHOULD HAVE — 5/8 done:** `SH-01` حذف از کتابخانه · `SH-04` بازیابی رمز عبور · `SH-05` فعال/غیرفعال کردن کتاب · `SH-07` مدیریت کاربران · `SH-08` تغییر رمز عبور — remaining: `SH-02` جستجو، `SH-03` صفحه‌بندی، `SH-06` Toast/Notification
 - **COULD HAVE — 1/5 done:** `CH-04` اشتراک‌گذاری لینک کتاب — remaining: `CH-01` دسته‌بندی، `CH-02` تعداد دفعات اضافه‌شده، `CH-03` یادداشت شخصی، `CH-05` آمار بازدید
 
 ## Next Steps (remaining features)

@@ -10,6 +10,7 @@ public interface IAuthenticationService
     Task LogoutAsync(string refreshToken);
     Task ForgotPasswordAsync(string email);
     Task ResetPasswordAsync(string email, string token, string newPassword);
+    Task ChangePasswordAsync(string currentPassword, string newPassword);
 }
 
 public class AuthenticationService : IAuthenticationService
@@ -79,6 +80,17 @@ public class AuthenticationService : IAuthenticationService
         var response = await _httpClient.PostAsJsonAsync(
             $"{_authUrl}/reset-password",
             new ResetPasswordRequest(email, token, newPassword));
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await ReadErrorAsync(response));
+        }
+    }
+
+    public async Task ChangePasswordAsync(string currentPassword, string newPassword)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            $"{_authUrl}/change-password",
+            new ChangePasswordRequest(currentPassword, newPassword));
         if (!response.IsSuccessStatusCode)
         {
             throw new Exception(await ReadErrorAsync(response));

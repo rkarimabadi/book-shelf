@@ -181,6 +181,25 @@ public class AuthenticationService : IAuthenticationService
         return Result.Success;
     }
 
+    public ErrorOr<Success> ChangePassword(string email, string newPasswordHash)
+    {
+        var user = _userRepository.GetByEmail(email);
+        if (user == null)
+        {
+            return UserErrors.Validation.UserNotFound(email);
+        }
+
+        var changeResult = user.ChangePassword(newPasswordHash);
+        if (changeResult.IsError)
+        {
+            return changeResult.Errors;
+        }
+
+        _userRepository.Update(user);
+
+        return Result.Success;
+    }
+
     public ErrorOr<User> GetUserByEmail(string email)
     {
         var user = _userRepository.GetByEmail(email);
@@ -190,34 +209,6 @@ public class AuthenticationService : IAuthenticationService
         }
 
         return user;
-    }
-
-    public ErrorOr<Success> DeactivateUser(string email)
-    {
-        var user = _userRepository.GetByEmail(email);
-        if (user == null)
-        {
-            return UserErrors.Validation.UserNotFound(email);
-        }
-
-        user.Deactivate();
-        _userRepository.Update(user);
-
-        return Result.Success;
-    }
-
-    public ErrorOr<Success> ActivateUser(string email)
-    {
-        var user = _userRepository.GetByEmail(email);
-        if (user == null)
-        {
-            return UserErrors.Validation.UserNotFound(email);
-        }
-
-        user.Activate();
-        _userRepository.Update(user);
-
-        return Result.Success;
     }
 
     private string GenerateRefreshToken()

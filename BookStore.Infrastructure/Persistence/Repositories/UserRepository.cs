@@ -117,6 +117,14 @@ public sealed class UserRepository : IUserRepository
         return _dbContext.Users.Any(u => u.Email == email.ToLowerInvariant());
     }
 
+    public Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
+            .AsNoTracking()
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<List<(Book Book, DateTime AddedAt)>> GetLibraryBooksAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return _dbContext.Users

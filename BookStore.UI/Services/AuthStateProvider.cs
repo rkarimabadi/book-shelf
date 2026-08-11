@@ -103,6 +103,7 @@ public class AuthStateProvider : AuthenticationStateProvider
             var role = GetString(root, "role");
             var givenName = GetString(root, "given_name");
             var surname = GetString(root, "family_name");
+            var sub = GetString(root, "sub");
 
             var claims = new List<Claim>
             {
@@ -111,6 +112,11 @@ public class AuthStateProvider : AuthenticationStateProvider
                 new(ClaimTypes.GivenName, givenName ?? string.Empty),
                 new(ClaimTypes.Surname, surname ?? string.Empty)
             };
+
+            if (!string.IsNullOrEmpty(sub))
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, sub));
+            }
 
             if (!string.IsNullOrEmpty(givenName) || !string.IsNullOrEmpty(surname))
             {

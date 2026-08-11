@@ -32,5 +32,6 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredServ
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IAdminBookService, AdminBookService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
 await builder.Build().RunAsync();

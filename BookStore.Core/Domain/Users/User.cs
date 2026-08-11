@@ -227,6 +227,48 @@ public class User : AggregateRoot
         return Result.Success;
     }
 
+    public ErrorOr<Success> ChangePassword(string newPasswordHash)
+    {
+        Guard.Against.NullOrEmpty(newPasswordHash, nameof(newPasswordHash));
+
+        if (!IsActive)
+        {
+            return UserErrors.Validation.UserInactive(Email);
+        }
+
+        PasswordHash = newPasswordHash;
+
+        // A changed password invalidates every existing session; force a fresh login.
+        foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))
+        {
+            refreshToken.Revoke();
+        }
+
+        AddDomainEvent(new PasswordChangedEvent(Id, Email));
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ChangeRole(UserRole role)
+    {
+        if (!Enum.IsDefined(role))
+        {
+            return UserErrors.Validation.InvalidUserRole(role);
+        }
+
+        if (Role == role)
+        {
+            return UserErrors.Validation.UserRoleAlreadySet(role);
+        }
+
+        var oldRole = Role;
+        Role = role;
+
+        AddDomainEvent(new UserRoleChangedEvent(Id, Email, oldRole, role));
+
+        return Result.Success;
+    }
+
     public void Deactivate()
     {
         if (!IsActive)
@@ -235,6 +277,13 @@ public class User : AggregateRoot
         }
 
         IsActive = false;
+
+        // Blocking an account must kill its sessions too; a revoked refresh token forces re-login.
+        foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))
+        {
+            refreshToken.Revoke();
+        }
+
         AddDomainEvent(new UserDeactivatedEvent(Id, Email));
     }
 

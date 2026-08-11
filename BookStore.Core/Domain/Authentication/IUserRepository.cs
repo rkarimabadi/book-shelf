@@ -14,6 +14,7 @@ public interface IUserRepository
     void Update(User user);
     void Delete(User user);
     bool EmailExists(string email);
+    Task<List<User>> GetUsersAsync(CancellationToken cancellationToken = default);
     Task<List<(Book Book, DateTime AddedAt)>> GetLibraryBooksAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<bool> IsBookInLibraryAsync(Guid userId, Guid bookId, CancellationToken cancellationToken = default);
 }

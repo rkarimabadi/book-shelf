@@ -12,8 +12,23 @@ public static class UserErrors
         public static Error InvalidCredentials =>
             Error.Unauthorized("User.InvalidCredentials", "Invalid email or password.");
 
+        public static Error InvalidCurrentPassword =>
+            Error.Validation("User.InvalidCurrentPassword", "Current password is incorrect.");
+
         public static Error UserNotFound(string email) =>
             Error.NotFound("User.NotFound", $"User with email '{email}' not found.");
+
+        public static Error UserNotFound(Guid id) =>
+            Error.NotFound("User.NotFound", $"User with id '{id}' not found.");
+
+        public static Error UserRoleAlreadySet(UserRole role) =>
+            Error.Conflict("User.RoleAlreadySet", $"User already has the '{role}' role.");
+
+        public static Error InvalidUserRole(UserRole role) =>
+            Error.Validation("User.InvalidRole", $"'{role}' is not a valid role.");
+
+        public static Error CannotModifySelf =>
+            Error.Conflict("User.CannotModifySelf", "Admins cannot modify their own account.");
 
         public static Error UserInactive(string email) =>
             Error.Unauthorized("User.Inactive", $"User account '{email}' is inactive.");
