@@ -274,6 +274,14 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - No migration required (no schema change)
 - Verified via API smoke test: anon list 401 · non-admin list 403 · admin list 200 · deactivate 204 (+ blocked user's login → 401, `IsActive=false` in list) · reactivate 204 · role change 204 · same role again 409 · self status/role/delete all 409 · missing user 404 · invalid role 400 · delete 204 (user vanishes from list) · DB check: zero orphaned `RefreshToken`/`LibraryEntry` rows after delete (cascade works)
 
+## Responsive Navigation Status (SH-09 - ناوبری واکنش‌گرا)
+
+- **Requirement:** the header/nav must work on desktop, tablet, and mobile — on small screens the stretched links collapse into a hamburger drawer
+- **Layout (`MainLayout.razor`):** nav links + auth area (ورود/ثبت‌نام or user + خروج) now live inside a single `.app-menu` container next to a `.menu-toggle` button (3-bar hamburger with a CSS animated ✕ when open). All `NavLink`s got `@onclick="CloseMenu"` so the drawer closes on navigation (handlers pass through as unmatched attributes to the rendered `<a>`); `HandleLogout` also closes it explicitly since the layout instance survives navigation
+- **CSS (`MainLayout.razor.css`):** desktop ≥1024px keeps the horizontal nav (`.menu-toggle` hidden, `.app-menu` a flex row with `.app-auth` pushed right via `margin-inline-start: auto`); below `1023.98px` the toggle appears (`margin-inline-start: auto`, i.e. left side in RTL), `.app-menu` becomes a full-width drop-down panel (`flex-basis: 100%`, hidden unless `.is-open`), nav links stack vertically with full-row tap targets + active highlight, auth stacks below
+- Accessibility: `aria-label` + `aria-expanded` on the toggle
+- No server/API changes. Verified: build clean (0 warnings / 0 errors); app boots and serves the WASM shell + `_framework/BookStore.UI.dll` (responsive behavior is CSS-driven, needs a browser check to eyeball the breakpoint)
+
 ## Public Books UI Status
 
 - **Pages:** `Features/Books/Pages/BooksList.razor` (`/books` — responsive card grid, skeleton loading, EmptyState/ErrorNotice states), `BookDetails.razor` (`/books/{id:guid}` — cover, title, author, description, دانلود button, auth-aware افزودن به کتابخانه)
@@ -338,7 +346,7 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 Features are tracked in `book/MVP Scope Document.md` with stable **codes** for prompt references: `MH-*` (MUST), `SH-*` (SHOULD), `CH-*` (COULD), `WH-*` (WON'T) — e.g. «implement SH-02». Build is clean (0 warnings / 0 errors).
 
 - **MUST HAVE — 11/11 done (MH-01..MH-12):** ثبت‌نام/ورود/خروج (`Register.razor`, `Login.razor`, `MainLayout.razor`) · Home + books list + details with دانلود/افزودن به کتابخانه (`Home.razor`, `BooksList.razor`, `BookDetails.razor`) · افزودن به کتابخانه + لیست کتاب‌های کاربر (`BookDetails.razor`, `MyLibrary.razor`) · افزودن/ویرایش/حذف کتاب (ادمین) (`AdminBooks.razor`, `AdminBookAdd.razor`, `AdminBookEdit.razor`) · هدایت هوشمند ناشناس — anonymous → login → auto-add / auto-download (`BookDetails.razor` pending flows)
-- **SHOULD HAVE — 5/8 done:** `SH-01` حذف از کتابخانه · `SH-04` بازیابی رمز عبور · `SH-05` فعال/غیرفعال کردن کتاب · `SH-07` مدیریت کاربران · `SH-08` تغییر رمز عبور — remaining: `SH-02` جستجو، `SH-03` صفحه‌بندی، `SH-06` Toast/Notification
+- **SHOULD HAVE — 6/9 done:** `SH-01` حذف از کتابخانه · `SH-04` بازیابی رمز عبور · `SH-05` فعال/غیرفعال کردن کتاب · `SH-07` مدیریت کاربران · `SH-08` تغییر رمز عبور · `SH-09` ناوبری واکنش‌گرا — remaining: `SH-02` جستجو، `SH-03` صفحه‌بندی، `SH-06` Toast/Notification
 - **COULD HAVE — 1/5 done:** `CH-04` اشتراک‌گذاری لینک کتاب — remaining: `CH-01` دسته‌بندی، `CH-02` تعداد دفعات اضافه‌شده، `CH-03` یادداشت شخصی، `CH-05` آمار بازدید
 
 ## Next Steps (remaining features)
