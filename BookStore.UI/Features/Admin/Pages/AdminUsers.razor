@@ -3,6 +3,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IAdminUserService AdminUserService
 @inject NavigationManager Nav
+@inject ToastService ToastService
 
 <PageTitle>مدیریت کاربران</PageTitle>
 
@@ -27,58 +28,21 @@ else if (_users.Count == 0)
 {
     <EmptyState Title="هنوز کاربری ثبت نشده است"
                 Message="وقتی کاربری ثبت‌نام کند، اینجا نمایش داده می‌شود."
-                Icon="👤" />
+                Icon="bi bi-person" />
 }
 else
 {
     <div class="admin-user-list">
         @foreach (var user in _users)
         {
-            <div class="admin-user-row @(user.IsActive ? "" : "is-inactive")" @key="user.Id">
-                <div class="admin-user-avatar">
-                    @GetInitials(user)
-                </div>
-                <div class="admin-user-info">
-                    <h3 class="admin-user-name">
-                        @user.FirstName @user.LastName
-                        @if (user.IsActive == false)
-                        {
-                            <span class="admin-user-badge">مسدود</span>
-                        }
-                    </h3>
-                    <p class="admin-user-email">@user.Email</p>
-                    <span class="admin-user-date">عضویت: @user.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
-                </div>
-                <div class="admin-user-actions">
-                    <span class="admin-role-badge @(user.Role == "Admin" ? "role-admin" : "role-user")">
-                        @(user.Role == "Admin" ? "ادمین" : "کاربر")
-                    </span>
-                    @if (user.Id == _currentUserId)
-                    {
-                        <span class="admin-user-self">حساب شما</span>
-                    }
-                    else
-                    {
-                        <button type="button"
-                                class="admin-action @(user.Role == "Admin" ? "admin-action-edit" : "admin-action-activate")"
-                                disabled="@(_busyId == user.Id)"
-                                @onclick="() => ToggleRoleAsync(user)">
-                            @(_busyId == user.Id
-                                ? "در حال تغییر..."
-                                : (user.Role == "Admin" ? "تبدیل به کاربر" : "ارتقا به ادمین"))
-                        </button>
-                        <button type="button"
-                                class="admin-action @(user.IsActive ? "admin-action-deactivate" : "admin-action-activate")"
-                                disabled="@(_busyId == user.Id)"
-                                @onclick="() => ToggleStatusAsync(user)">
-                            @(_busyId == user.Id
-                                ? "در حال تغییر..."
-                                : (user.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی"))
-                        </button>
-                        <button type="button" class="admin-action admin-action-delete" @onclick="() => AskDelete(user)">حذف</button>
-                    }
-                </div>
-            </div>
+            <AdminUserRow @key="user.Id"
+                          User="user"
+                          CurrentUserId="_currentUserId"
+                          BusyId="_busyId"
+                          OnToggleRole="() => ToggleRoleAsync(user)"
+                          OnToggleStatus="() => ToggleStatusAsync(user)"
+                          OnResetPassword="() => AskResetPassword(user)"
+                          OnDelete="() => AskDelete(user)" />
         }
     </div>
 }
@@ -95,11 +59,15 @@ else
                    OnCancel="CancelDelete" />
 }
 
-@if (_notice is not null)
+@if (_resetTarget is not null)
 {
-    <div class="admin-notice @(_notice.Value.IsError ? "notice-error" : "notice-success")" role="status">
-        @_notice.Value.Text
-    </div>
+    <AdminUserPasswordDialog Visible="true"
+                             Title="@($"تغییر رمز «{_resetTarget.FirstName} {_resetTarget.LastName}»")"
+                             IsBusy="@_isResetting"
+                             ErrorMessage="@_resetError"
+                             @key="_resetTarget.Id"
+                             OnSubmit="ConfirmResetPasswordAsync"
+                             OnCancel="CancelResetPassword" />
 }
 
 @code {
@@ -107,9 +75,11 @@ else
     private bool _error;
     private UserResponse? _deleteTarget;
     private bool _isDeleting;
+    private UserResponse? _resetTarget;
+    private bool _isResetting;
+    private string? _resetError;
     private Guid? _busyId;
     private Guid? _currentUserId;
-    private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,22 +98,66 @@ else
         _error = _users is null;
     }
 
-    private static string GetInitials(UserResponse user)
-    {
-        var first = string.IsNullOrWhiteSpace(user.FirstName) ? string.Empty : user.FirstName[..1];
-        var last = string.IsNullOrWhiteSpace(user.LastName) ? string.Empty : user.LastName[..1];
-        return $"{first}{last}".Trim();
-    }
-
     private void AskDelete(UserResponse user)
     {
         _deleteTarget = user;
-        _notice = null;
     }
 
     private void CancelDelete()
     {
         _deleteTarget = null;
+    }
+
+    private void AskResetPassword(UserResponse user)
+    {
+        _resetTarget = user;
+        _resetError = null;
+    }
+
+    private void CancelResetPassword()
+    {
+        _resetTarget = null;
+        _resetError = null;
+    }
+
+    private async Task ConfirmResetPasswordAsync(string newPassword)
+    {
+        if (_resetTarget is null || _isResetting)
+        {
+            return;
+        }
+
+        _isResetting = true;
+        _resetError = null;
+        try
+        {
+            var result = await AdminUserService.ResetUserPasswordAsync(_resetTarget.Id, newPassword);
+
+            if (result.Unauthorized)
+            {
+                _resetTarget = null;
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/users"));
+                return;
+            }
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess($"رمز عبور «{_resetTarget.FirstName} {_resetTarget.LastName}» تغییر کرد و از همهٔ دستگاه‌ها خارج شد.");
+                _resetTarget = null;
+            }
+            else if (result.Forbidden)
+            {
+                _resetError = "شما مجوز لازم برای این عملیات را ندارید.";
+            }
+            else
+            {
+                _resetError = result.Message;
+            }
+        }
+        finally
+        {
+            _isResetting = false;
+        }
     }
 
     private async Task ToggleStatusAsync(UserResponse user)
@@ -154,7 +168,6 @@ else
         }
 
         _busyId = user.Id;
-        _notice = null;
 
         try
         {
@@ -168,18 +181,23 @@ else
 
             if (result.Success)
             {
-                _notice = (user.IsActive
-                    ? $"حساب «{user.FirstName} {user.LastName}» مسدود شد و از سیستم خارج می‌شود."
-                    : $"حساب «{user.FirstName} {user.LastName}» دوباره فعال شد.", false);
+                if (user.IsActive)
+                {
+                    ToastService.ShowSuccess($"حساب «{user.FirstName} {user.LastName}» مسدود شد و از سیستم خارج می‌شود.");
+                }
+                else
+                {
+                    ToastService.ShowSuccess($"حساب «{user.FirstName} {user.LastName}» دوباره فعال شد.");
+                }
                 await LoadAsync();
             }
             else if (result.Forbidden)
             {
-                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+                ToastService.ShowError("شما مجوز لازم برای این عملیات را ندارید.");
             }
             else
             {
-                _notice = (result.Message ?? "تغییر وضعیت کاربر ناموفق بود.", true);
+                ToastService.ShowError(result.Message ?? "تغییر وضعیت کاربر ناموفق بود.");
             }
         }
         finally
@@ -196,7 +214,6 @@ else
         }
 
         _busyId = user.Id;
-        _notice = null;
 
         try
         {
@@ -211,16 +228,16 @@ else
 
             if (result.Success)
             {
-                _notice = ($"نقش «{user.FirstName} {user.LastName}» به {(newRole == "Admin" ? "ادمین" : "کاربر")} تغییر کرد.", false);
+                ToastService.ShowSuccess($"نقش «{user.FirstName} {user.LastName}» به {(newRole == "Admin" ? "ادمین" : "کاربر")} تغییر کرد.");
                 await LoadAsync();
             }
             else if (result.Forbidden)
             {
-                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+                ToastService.ShowError("شما مجوز لازم برای این عملیات را ندارید.");
             }
             else
             {
-                _notice = (result.Message ?? "تغییر نقش کاربر ناموفق بود.", true);
+                ToastService.ShowError(result.Message ?? "تغییر نقش کاربر ناموفق بود.");
             }
         }
         finally
@@ -252,16 +269,16 @@ else
 
             if (result.Success)
             {
-                _notice = ("کاربر با موفقیت حذف شد.", false);
+                ToastService.ShowSuccess("کاربر با موفقیت حذف شد.");
                 await LoadAsync();
             }
             else if (result.Forbidden)
             {
-                _notice = ("شما مجوز لازم برای این عملیات را ندارید.", true);
+                ToastService.ShowError("شما مجوز لازم برای این عملیات را ندارید.");
             }
             else
             {
-                _notice = (result.Message ?? "حذف کاربر ناموفق بود.", true);
+                ToastService.ShowError(result.Message ?? "حذف کاربر ناموفق بود.");
             }
         }
         finally

@@ -4,6 +4,7 @@ using BookStore.Application.Features.Books.Commands.DeleteBook;
 using BookStore.Application.Features.Books.Commands.SetBookStatus;
 using BookStore.Application.Features.Books.Commands.UpdateBook;
 using BookStore.Application.Features.Books.Queries.GetBook;
+using BookStore.Application.Features.Books.Queries.GetBookCategories;
 using BookStore.Application.Features.Books.Queries.GetBooks;
 using BookStore.Application.Common.Interfaces;
 using BookStore.Contracts.Books;
@@ -27,26 +28,45 @@ public sealed class BooksController : ApiController
         _env = env;
     }
 
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetBookCategoriesQuery(), cancellationToken);
+
+        return result.Match(Ok, Problem);
+    }
+
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] bool includeInactive = false)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12,
+        [FromQuery] bool includeInactive = false,
+        [FromQuery] string? category = null,
+        [FromQuery] string? search = null)
     {
         // Only admins may list deactivated books (the admin management page); for everyone
         // else the flag is ignored so the public catalog never leaks hidden books.
         var showInactive = includeInactive && User.IsInRole(Roles.Admin);
 
-        var result = await _sender.Send(new GetBooksQuery(showInactive));
+        var result = await _sender.Send(new GetBooksQuery(showInactive, page, pageSize, category, search));
 
         return result.Match(
-            books => Ok(books.Select(book => new BookResponse(
-                book.Id,
-                book.Title,
-                book.Author,
-                book.Description,
-                book.CoverImagePath,
-                book.FilePath,
-                book.CreatedAt,
-                book.UpdatedAt,
-                book.IsActive))),
+            paged => Ok(new PagedBooksResponse(
+                paged.Items.Select(book => new BookResponse(
+                    book.Id,
+                    book.Title,
+                    book.Author,
+                    book.Category,
+                    book.Description,
+                    book.CoverImagePath,
+                    book.FilePath,
+                    book.CreatedAt,
+                    book.UpdatedAt,
+                    book.IsActive)).ToList(),
+                paged.Page,
+                paged.PageSize,
+                paged.TotalCount,
+                paged.TotalPages)),
             errors => Problem(errors));
     }
 
@@ -62,6 +82,7 @@ public sealed class BooksController : ApiController
                 book.Id,
                 book.Title,
                 book.Author,
+                book.Category,
                 book.Description,
                 book.CoverImagePath,
                 book.FilePath,
@@ -124,6 +145,7 @@ public sealed class BooksController : ApiController
         var command = new CreateBookCommand(
             request.Title,
             request.Author,
+            request.Category,
             request.Description,
             coverImagePath,
             filePath);
@@ -138,6 +160,7 @@ public sealed class BooksController : ApiController
                     book.Id,
                     book.Title,
                     book.Author,
+                    book.Category,
                     book.Description,
                     book.CoverImagePath,
                     book.FilePath,
@@ -175,6 +198,7 @@ public sealed class BooksController : ApiController
             id,
             request.Title,
             request.Author,
+            request.Category,
             request.Description,
             coverImagePath,
             filePath);
@@ -186,6 +210,7 @@ public sealed class BooksController : ApiController
                 book.Id,
                 book.Title,
                 book.Author,
+                book.Category,
                 book.Description,
                 book.CoverImagePath,
                 book.FilePath,
@@ -206,6 +231,7 @@ public sealed class BooksController : ApiController
                 book.Id,
                 book.Title,
                 book.Author,
+                book.Category,
                 book.Description,
                 book.CoverImagePath,
                 book.FilePath,

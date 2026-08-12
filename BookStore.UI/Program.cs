@@ -11,6 +11,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped<IClientStorageService, ClientStorageService>();
+builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped(sp =>
 {
     // Each HttpClient owns its private handler chain (no shared DelegatingHandler across clients).

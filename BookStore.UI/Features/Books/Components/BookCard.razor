@@ -11,12 +11,32 @@
 else
 {
     <NavLink class="book-card" href="@($"/books/{Book.Id}")">
-        <div class="details-cover">
+        <div class="details-cover book-card-cover">
             <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" />
+            @if (ShowEpubBadge)
+            {
+                <span class="book-card-badge badge-epub" title="فایل EPUB">
+                    <i class="bi bi-journal-richtext" aria-hidden="true"></i>
+                    EPUB
+                </span>
+            }
+            else if (InLibrary)
+            {
+                <span class="book-card-badge badge-library" role="img" aria-label="در کتابخانهٔ شما" title="در کتابخانهٔ شما">
+                    <i class="bi bi-bookmark-check-fill" aria-hidden="true"></i>
+                </span>
+            }
         </div>
         <div class="book-card-body">
             <h3 class="book-card-title">@Book.Title</h3>
             <p class="book-card-author">@Book.Author</p>
+            @if (!string.IsNullOrWhiteSpace(Book.Category))
+            {
+                <p class="book-card-category">
+                    <i class="bi bi-tag" aria-hidden="true"></i>
+                    @Book.Category
+                </p>
+            }
         </div>
     </NavLink>
 }
@@ -28,4 +48,12 @@ else
 
     [Parameter]
     public bool Skeleton { get; set; }
+
+    // Shows a small "EPUB" badge on the cover corner (public catalog).
+    [Parameter]
+    public bool ShowEpubBadge { get; set; }
+
+    // Shows a bookmark badge on the cover corner (user's library).
+    [Parameter]
+    public bool InLibrary { get; set; }
 }

@@ -13,7 +13,7 @@ public class AuthenticationService : IAuthenticationService
         _userRepository = userRepository;
     }
 
-    public ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName)
+    public ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName, bool hasPassword = true)
     {
         var existingUser = _userRepository.GetByEmail(email);
         if (existingUser != null)
@@ -21,7 +21,10 @@ public class AuthenticationService : IAuthenticationService
             return UserErrors.Validation.EmailAlreadyExists(email);
         }
 
-        var userResult = User.Create(email, passwordHash, firstName, lastName);
+        // hasPassword=false marks Google-created accounts (the hash is a random never-known
+        // secret) so the change-password flow lets them SET a password first. Default true
+        // keeps password-registered accounts and the SeedAdmin bootstrap unchanged.
+        var userResult = User.Create(email, passwordHash, firstName, lastName, hasPassword: hasPassword);
         if (userResult.IsError)
         {
             return userResult.Errors;
@@ -44,6 +47,39 @@ public class AuthenticationService : IAuthenticationService
         if (user.PasswordHash != passwordHash)
         {
             return UserErrors.Validation.InvalidCredentials;
+        }
+
+        if (!user.IsActive)
+        {
+            return UserErrors.Validation.UserInactive(email);
+        }
+
+        var loginResult = user.Login();
+        if (loginResult.IsError)
+        {
+            return loginResult.Errors;
+        }
+
+        var refreshToken = GenerateRefreshToken();
+        var expiresAt = DateTime.UtcNow.AddDays(7);
+
+        var addRefreshTokenResult = user.AddRefreshToken(refreshToken, expiresAt);
+        if (addRefreshTokenResult.IsError)
+        {
+            return addRefreshTokenResult.Errors;
+        }
+
+        _userRepository.Update(user);
+
+        return (user, refreshToken);
+    }
+
+    public ErrorOr<(User User, string RefreshToken)> LoginExternalUser(string email)
+    {
+        var user = _userRepository.GetByEmail(email);
+        if (user == null)
+        {
+            return UserErrors.Validation.UserNotFound(email);
         }
 
         if (!user.IsActive)

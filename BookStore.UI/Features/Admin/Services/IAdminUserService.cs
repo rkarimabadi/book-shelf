@@ -18,4 +18,6 @@ public interface IAdminUserService
     Task<AdminUserResult> SetUserRoleAsync(Guid id, string role, CancellationToken cancellationToken = default);
 
     Task<AdminUserResult> DeleteUserAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<AdminUserResult> ResetUserPasswordAsync(Guid id, string newPassword, CancellationToken cancellationToken = default);
 }

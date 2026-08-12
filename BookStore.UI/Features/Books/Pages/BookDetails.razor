@@ -25,6 +25,14 @@ else
             <h1 class="details-title">@_book.Title</h1>
             <p class="details-author">@_book.Author</p>
 
+            @if (!string.IsNullOrWhiteSpace(_book.Category))
+            {
+                <span class="details-category">
+                    <i class="bi bi-tag" aria-hidden="true"></i>
+                    @_book.Category
+                </span>
+            }
+
             @if (!string.IsNullOrWhiteSpace(_book.Description))
             {
                 <p class="details-description">@_book.Description</p>
@@ -42,13 +50,17 @@ else
                         <button type="button" class="book-action book-action-download"
                                 disabled="@_isDownloading"
                                 @onclick="OnDownloadClick">
+                            <i class="bi @(_isDownloading ? "bi-arrow-repeat bi-spin" : "bi-download")" aria-hidden="true"></i>
                             @(_isDownloading ? "در حال دانلود..." : "دانلود کتاب")
                         </button>
                     }
                     else
                     {
                         <button type="button" class="book-action book-action-download"
-                                @onclick="QueueDownloadAndRedirectToLogin">دانلود کتاب</button>
+                                @onclick="QueueDownloadAndRedirectToLogin">
+                            <i class="bi bi-download" aria-hidden="true"></i>
+                            دانلود کتاب
+                        </button>
                     }
                 }
 
@@ -59,6 +71,7 @@ else
                         <button type="button" class="book-action book-action-remove"
                                 disabled="@_isBusy"
                                 @onclick="AskRemoveFromLibrary">
+                            <i class="bi bi-bookmark-dash" aria-hidden="true"></i>
                             حذف از کتابخانه
                         </button>
                     }
@@ -67,6 +80,7 @@ else
                         <button type="button" class="book-action book-action-add"
                                 disabled="@_isBusy"
                                 @onclick="OnAddClick">
+                            <i class="bi @(_isBusy ? "bi-arrow-repeat bi-spin" : "bi-bookmark-plus")" aria-hidden="true"></i>
                             @(_isBusy ? "در حال افزودن..." : "افزودن به کتابخانه")
                         </button>
                     }
@@ -74,12 +88,16 @@ else
                 else
                 {
                     <button type="button" class="book-action book-action-add"
-                            @onclick="QueueAddAndRedirectToLogin">افزودن به کتابخانه</button>
+                            @onclick="QueueAddAndRedirectToLogin">
+                        <i class="bi bi-bookmark-plus" aria-hidden="true"></i>
+                        افزودن به کتابخانه
+                    </button>
                 }
 
                 <button type="button" class="book-action book-action-copy"
                         disabled="@_isSharing"
                         @onclick="CopyLinkAsync">
+                    <i class="bi bi-link-45deg" aria-hidden="true"></i>
                     کپی لینک
                 </button>
 
@@ -88,15 +106,34 @@ else
                     <button type="button" class="book-action book-action-share"
                             disabled="@_isSharing"
                             @onclick="ShareAsync">
+                        <i class="bi bi-share" aria-hidden="true"></i>
                         اشتراک‌گذاری
                     </button>
                 }
             </div>
 
-            @if (_notice is not null)
+            @if (_isAuthenticated)
             {
-                <div class="details-notice @(_notice.Value.IsError ? "notice-error" : "notice-success")" role="status">
-                    @_notice.Value.Text
+                <div class="details-note">
+                    <div class="details-note-head">
+                        <i class="bi bi-journal-text" aria-hidden="true"></i>
+                        <span>یادداشت خصوصی</span>
+                    </div>
+                    <textarea class="details-note-input"
+                              rows="4"
+                              maxlength="1000"
+                              placeholder="مثلاً: چند صفحه از این کتاب را خوانده‌ام، نظر شخصی من دربارهٔ آن..."
+                              @bind="_note"
+                              @bind:event="oninput"></textarea>
+                    <div class="details-note-foot">
+                        <span class="details-note-count">@_note.Length / 1000</span>
+                        <button type="button" class="book-action book-action-save"
+                                disabled="@_isSavingNote"
+                                @onclick="SaveNoteAsync">
+                            <i class="bi @(_isSavingNote ? "bi-arrow-repeat bi-spin" : "bi-check-lg")" aria-hidden="true"></i>
+                            @(_isSavingNote ? "در حال ذخیره..." : "ذخیرهٔ یادداشت")
+                        </button>
+                    </div>
                 </div>
             }
         </div>
@@ -135,6 +172,9 @@ else
     [Inject]
     private IJSRuntime JS { get; set; } = default!;
 
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
     private BookResponse? _book;
     private bool _error;
     private bool _isAuthenticated;
@@ -144,7 +184,8 @@ else
     private bool _showRemoveConfirm;
     private bool _canShare;
     private bool _isSharing;
-    private (string Text, bool IsError)? _notice;
+    private string _note = string.Empty;
+    private bool _isSavingNote;
 
     protected override async Task OnInitializedAsync()
     {
@@ -171,6 +212,7 @@ else
         if (_isAuthenticated)
         {
             _isInLibrary = await BookService.IsInMyLibraryAsync(Id);
+            _note = await BookService.GetBookNoteAsync(Id) ?? string.Empty;
         }
     }
 
@@ -236,13 +278,17 @@ else
         }
 
         _isSharing = true;
-        _notice = null;
         try
         {
             var copied = await JS.InvokeAsync<bool>("bookstoreCopyText", ShareUrl);
-            _notice = copied
-                ? ("لینک کتاب کپی شد.", false)
-                : ("کپی لینک ناموفق بود؛ لطفاً به‌صورت دستی کپی کنید.", true);
+            if (copied)
+            {
+                ToastService.ShowSuccess("لینک کتاب کپی شد.");
+            }
+            else
+            {
+                ToastService.ShowError("کپی لینک ناموفق بود؛ لطفاً به‌صورت دستی کپی کنید.");
+            }
         }
         finally
         {
@@ -258,7 +304,6 @@ else
         }
 
         _isSharing = true;
-        _notice = null;
         try
         {
             // Resolves false on cancel or failure — a user cancel is normal, so no error shown.
@@ -267,6 +312,40 @@ else
         finally
         {
             _isSharing = false;
+        }
+    }
+
+    private async Task SaveNoteAsync()
+    {
+        if (_isSavingNote)
+        {
+            return;
+        }
+
+        _isSavingNote = true;
+        try
+        {
+            var result = await BookService.SaveBookNoteAsync(Id, _note);
+
+            if (result.Unauthorized)
+            {
+                var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("یادداشت شما ذخیره شد.");
+            }
+            else
+            {
+                ToastService.ShowError(result.Message ?? "ذخیرهٔ یادداشت ناموفق بود؛ دوباره تلاش کنید.");
+            }
+        }
+        finally
+        {
+            _isSavingNote = false;
         }
     }
 
@@ -280,7 +359,6 @@ else
         }
 
         _isBusy = true;
-        _notice = null;
 
         try
         {
@@ -296,11 +374,11 @@ else
             if (result.Success)
             {
                 _isInLibrary = false;
-                _notice = ("کتاب از کتابخانهٔ شما حذف شد.", false);
+                ToastService.ShowSuccess("کتاب از کتابخانهٔ شما حذف شد.");
             }
             else
             {
-                _notice = (result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.", true);
+                ToastService.ShowError(result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.");
             }
 
             _showRemoveConfirm = false;
@@ -335,7 +413,6 @@ else
         }
 
         _isDownloading = true;
-        _notice = null;
         try
         {
             var result = await BookService.DownloadBookAsync(Id);
@@ -351,18 +428,18 @@ else
             if (result.Unauthorized)
             {
                 // Post-login auto-download still rejected; surface the error instead of bouncing to login again.
-                _notice = (result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", true);
+                ToastService.ShowError(result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.");
                 return;
             }
 
             if (!result.Success)
             {
-                _notice = (result.Message ?? "دانلود کتاب ناموفق بود.", true);
+                ToastService.ShowError(result.Message ?? "دانلود کتاب ناموفق بود.");
                 return;
             }
 
             await JS.InvokeVoidAsync("bookstoreDownload", result.Content!, DisplayFileName(_book?.FilePath));
-            _notice = ("دانلود شروع شد.", false);
+            ToastService.ShowSuccess("دانلود شروع شد.");
         }
         finally
         {
@@ -391,7 +468,7 @@ else
         }
 
         _isBusy = true;
-        _notice = null;
+
         try
         {
             var result = await BookService.AddToLibraryAsync(Id);
@@ -407,18 +484,18 @@ else
             if (result.Unauthorized)
             {
                 // Post-login auto-add still rejected; surface the error instead of bouncing to login again.
-                _notice = (result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", true);
+                ToastService.ShowError(result.Message ?? "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.");
                 return;
             }
 
             if (result.Success)
             {
                 _isInLibrary = true;
-                _notice = ("کتاب با موفقیت به کتابخانهٔ شما اضافه شد.", false);
+                ToastService.ShowSuccess("کتاب با موفقیت به کتابخانهٔ شما اضافه شد.");
             }
             else
             {
-                _notice = (result.Message ?? "افزودن به کتابخانه ناموفق بود.", true);
+                ToastService.ShowError(result.Message ?? "افزودن به کتابخانه ناموفق بود.");
             }
         }
         finally

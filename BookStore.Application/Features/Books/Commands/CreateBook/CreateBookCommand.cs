@@ -9,6 +9,7 @@ namespace BookStore.Application.Features.Books.Commands.CreateBook;
 public record CreateBookCommand(
     string Title,
     string Author,
+    string Category,
     string Description,
     string CoverImagePath,
     string FilePath) : IRequest<ErrorOr<Book>>;
@@ -24,6 +25,10 @@ public class CreateBookCommandValidator : AbstractValidator<CreateBookCommand>
         RuleFor(x => x.Author)
             .NotEmpty().WithMessage("Author is required.")
             .MaximumLength(100).WithMessage("Author must not exceed 100 characters.");
+
+        RuleFor(x => x.Category)
+            .NotEmpty().WithMessage("Category is required.")
+            .Must(BookCategories.IsValid).WithMessage("Category is invalid.");
 
         RuleFor(x => x.FilePath)
             .NotEmpty().WithMessage("Book file is required.");
@@ -46,6 +51,7 @@ public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Error
         var bookResult = Book.Create(
             command.Title,
             command.Author,
+            command.Category,
             command.Description,
             command.CoverImagePath,
             command.FilePath);

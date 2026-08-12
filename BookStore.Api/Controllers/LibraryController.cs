@@ -38,6 +38,7 @@ public sealed class LibraryController : ApiController
                 entry.Book.Id,
                 entry.Book.Title,
                 entry.Book.Author,
+                entry.Book.Category,
                 entry.Book.Description,
                 entry.Book.CoverImagePath,
                 entry.Book.FilePath,

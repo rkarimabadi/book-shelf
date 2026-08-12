@@ -16,6 +16,15 @@ public class User : AggregateRoot
     public DateTime? LastLoginAt { get; private set; }
     public bool IsActive { get; private set; } = true;
 
+    /// <summary>
+    /// Whether the account has a password the user actually knows. Password-registered
+    /// accounts are true. Google-created accounts start false (the stored hash is a
+    /// random never-known secret), so the change-password flow lets them <em>set</em> a
+    /// password without proving a current one; once set (change/reset/admin-reset) it
+    /// stays true and change-password behaves normally from then on.
+    /// </summary>
+    public bool HasPassword { get; private set; } = true;
+
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
@@ -32,7 +41,8 @@ public class User : AggregateRoot
         string passwordHash,
         string firstName,
         string lastName,
-        UserRole role = UserRole.User)
+        UserRole role = UserRole.User,
+        bool hasPassword = true)
     {
         var errors = new List<Error>();
 
@@ -62,7 +72,8 @@ public class User : AggregateRoot
             PasswordHash = passwordHash,
             FirstName = firstName,
             LastName = lastName,
-            Role = role
+            Role = role,
+            HasPassword = hasPassword
         };
 
         user.AddDomainEvent(new UserCreatedEvent(user.Id, user.Email, user.FirstName, user.LastName));
@@ -214,6 +225,7 @@ public class User : AggregateRoot
         }
 
         PasswordHash = newPasswordHash;
+        HasPassword = true;
         resetToken.MarkUsed();
 
         // A changed password invalidates every existing session; force a fresh login.
@@ -237,6 +249,7 @@ public class User : AggregateRoot
         }
 
         PasswordHash = newPasswordHash;
+        HasPassword = true;
 
         // A changed password invalidates every existing session; force a fresh login.
         foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))

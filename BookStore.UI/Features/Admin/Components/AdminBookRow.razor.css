@@ -1,0 +1,215 @@
+.admin-book-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.admin-book-row:hover {
+    border-color: rgba(0, 122, 255, 0.4);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-book-row:active {
+    transform: scale(0.995);
+}
+
+.admin-book-row.is-inactive {
+    opacity: 0.6;
+    background: var(--background-grouped);
+    border-style: dashed;
+}
+
+/* --- Cover --- */
+.admin-book-cover {
+    width: 56px;
+    height: 80px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--fill);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-book-cover ::deep .cover-image,
+.admin-book-cover ::deep .cover-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Info --- */
+.admin-book-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-book-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-headline);
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-book-status-dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+}
+
+.status-active {
+    background: var(--color-green);
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.18);
+}
+
+.status-inactive {
+    background: var(--color-red);
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.18);
+}
+
+.admin-book-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--color-red);
+    font-size: var(--text-caption1);
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.admin-book-author {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--label-secondary);
+    margin: var(--space-1) 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-book-author i {
+    font-size: var(--text-caption1);
+    opacity: 0.7;
+}
+
+.admin-book-category {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--fill);
+    color: var(--label-secondary);
+    font-size: var(--text-caption1);
+    line-height: 1.5;
+}
+
+.admin-book-category i {
+    font-size: var(--text-caption1);
+    opacity: 0.7;
+}
+
+.admin-book-date {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+    opacity: 0.8;
+}
+
+.admin-book-date i {
+    font-size: var(--text-caption1);
+    opacity: 0.7;
+}
+
+/* --- Actions --- */
+.admin-book-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.admin-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--text-subhead);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.admin-action:hover {
+    opacity: 0.85;
+}
+
+.admin-action:active {
+    transform: scale(0.96);
+}
+
+.admin-action-edit {
+    background: var(--fill);
+    color: var(--color-blue);
+}
+
+.admin-action-delete {
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--color-red);
+}
+
+.admin-action-deactivate {
+    background: rgba(255, 149, 0, 0.14);
+    color: var(--color-orange);
+}
+
+.admin-action-activate {
+    background: rgba(52, 199, 89, 0.14);
+    color: var(--color-green);
+}
+
+.admin-action:disabled {
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
+}
+
+@media (max-width: 768px) {
+    .admin-book-row {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+
+    .admin-book-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}

@@ -9,10 +9,15 @@ public sealed record RemoveFromLibraryResult(bool Success, string? Message, bool
 
 public sealed record DownloadResult(bool Success, byte[]? Content, string? Message, bool Unauthorized = false);
 
+public sealed record SaveNoteResult(bool Success, string? Message, bool Unauthorized = false);
+
 public interface IBookService
 {
-    /// <summary>Returns all books; null when the API call failed.</summary>
-    Task<IReadOnlyList<BookResponse>?> GetBooksAsync(bool forceRefresh = false, CancellationToken cancellationToken = default);
+    /// <summary>Returns one page of books (optionally filtered by category and/or title search) plus paging metadata; null when the API call failed.</summary>
+    Task<PagedBooksResponse?> GetBooksAsync(int page = 1, int pageSize = 12, string? category = null, string? search = null, bool forceRefresh = false, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns the fixed category catalog (Persian labels); null when the API call failed.</summary>
+    Task<IReadOnlyList<string>?> GetCategoriesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Returns a single book; null when not found or the API call failed.</summary>
     Task<BookResponse?> GetBookAsync(Guid id, bool includeInactive = false, CancellationToken cancellationToken = default);
@@ -31,6 +36,12 @@ public interface IBookService
 
     /// <summary>Downloads the book file for the current user. Success = false + Message on failure.</summary>
     Task<DownloadResult> DownloadBookAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns the current user's private note for a book ("" when none); null on API failure.</summary>
+    Task<string?> GetBookNoteAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves the current user's private note for a book (empty clears it). Success = false + Message on failure.</summary>
+    Task<SaveNoteResult> SaveBookNoteAsync(Guid bookId, string note, CancellationToken cancellationToken = default);
 
     /// <summary>Builds a root-relative URL for an uploaded file path (e.g. "uploads/covers/x.jpg").</summary>
     static string MediaUrl(string? path) =>

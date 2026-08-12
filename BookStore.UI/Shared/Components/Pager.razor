@@ -1,0 +1,94 @@
+@if (TotalPages > 1)
+{
+    <nav class="pager" aria-label="@AriaLabel">
+        <button type="button"
+                class="pager-btn pager-nav"
+                disabled="@(CurrentPage <= 1)"
+                @onclick="() => GoToAsync(CurrentPage - 1)">
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            قبلی
+        </button>
+
+        @foreach (var p in PageNumbers)
+        {
+            @if (p is null)
+            {
+                <span class="pager-ellipsis" aria-hidden="true">…</span>
+            }
+            else
+            {
+                <button type="button"
+                        class="pager-btn @(p == CurrentPage ? "active" : "")"
+                        aria-current="@(p == CurrentPage ? "page" : null)"
+                        @onclick="() => GoToAsync(p.Value)">
+                    @p
+                </button>
+            }
+        }
+
+        <button type="button"
+                class="pager-btn pager-nav"
+                disabled="@(CurrentPage >= TotalPages)"
+                @onclick="() => GoToAsync(CurrentPage + 1)">
+            بعدی
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+    </nav>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public int CurrentPage { get; set; }
+
+    [Parameter, EditorRequired]
+    public int TotalPages { get; set; }
+
+    [Parameter]
+    public string AriaLabel { get; set; } = "صفحه‌بندی";
+
+    [Parameter]
+    public EventCallback<int> OnPageChanged { get; set; }
+
+    private async Task GoToAsync(int page)
+    {
+        if (page < 1 || page > TotalPages || page == CurrentPage)
+        {
+            return;
+        }
+
+        await OnPageChanged.InvokeAsync(page);
+    }
+
+    // Numbered pages with "…" separators: always the first & last page, a small window around the
+    // current page, and ellipses only where a real gap exists.
+    private IReadOnlyList<int?> PageNumbers
+    {
+        get
+        {
+            if (TotalPages <= 7)
+            {
+                return Enumerable.Range(1, TotalPages).Select(i => (int?)i).ToList();
+            }
+
+            var pages = new List<int?> { 1 };
+
+            if (CurrentPage > 3)
+            {
+                pages.Add(null);
+            }
+
+            for (var i = Math.Max(2, CurrentPage - 1); i <= Math.Min(TotalPages - 1, CurrentPage + 1); i++)
+            {
+                pages.Add(i);
+            }
+
+            if (CurrentPage < TotalPages - 2)
+            {
+                pages.Add(null);
+            }
+
+            pages.Add(TotalPages);
+            return pages;
+        }
+    }
+}

@@ -11,34 +11,78 @@ public sealed class BookService : IBookService
 
     private readonly HttpClient _http;
 
-    private List<BookResponse>? _cache;
-    private DateTimeOffset _cacheTime;
+    // One 30 s cache entry per (page, pageSize, category) tuple, so browsing pages/filters doesn't re-fetch.
+    private readonly Dictionary<string, (PagedBooksResponse Response, DateTimeOffset Time)> _cache = new();
+    private IReadOnlyList<string>? _categories;
+    private DateTimeOffset _categoriesTime;
 
     public BookService(HttpClient http)
     {
         _http = http;
     }
 
-    public async Task<IReadOnlyList<BookResponse>?> GetBooksAsync(
+    public async Task<PagedBooksResponse?> GetBooksAsync(
+        int page = 1,
+        int pageSize = 12,
+        string? category = null,
+        string? search = null,
         bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
-        if (!forceRefresh && _cache is not null && DateTimeOffset.UtcNow - _cacheTime < CacheTtl)
+        var key = $"{page}:{pageSize}:{category}:{search}";
+
+        if (!forceRefresh && _cache.TryGetValue(key, out var cached) &&
+            DateTimeOffset.UtcNow - cached.Time < CacheTtl)
         {
-            return _cache;
+            return cached.Response;
         }
 
         try
         {
-            var books = await _http.GetFromJsonAsync<List<BookResponse>>("api/books", cancellationToken);
-            _cache = books ?? [];
-            _cacheTime = DateTimeOffset.UtcNow;
-            return _cache;
+            var url = $"api/books?page={page}&pageSize={pageSize}";
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                url += $"&category={Uri.EscapeDataString(category)}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                url += $"&search={Uri.EscapeDataString(search)}";
+            }
+
+            var paged = await _http.GetFromJsonAsync<PagedBooksResponse>(url, cancellationToken);
+
+            if (paged is not null)
+            {
+                _cache[key] = (paged, DateTimeOffset.UtcNow);
+            }
+
+            return paged;
         }
         catch
         {
-            // Fall back to stale cache if we have one; otherwise signal failure.
-            return _cache ?? null;
+            // Fall back to stale cache for this page if we have one; otherwise signal failure.
+            return _cache.TryGetValue(key, out var stale) ? stale.Response : null;
+        }
+    }
+
+    public async Task<IReadOnlyList<string>?> GetCategoriesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_categories is not null && DateTimeOffset.UtcNow - _categoriesTime < CacheTtl)
+        {
+            return _categories;
+        }
+
+        try
+        {
+            var categories = await _http.GetFromJsonAsync<List<string>>("api/books/categories", cancellationToken);
+            _categories = categories ?? [];
+            _categoriesTime = DateTimeOffset.UtcNow;
+            return _categories;
+        }
+        catch
+        {
+            return _categories ?? null;
         }
     }
 
@@ -124,6 +168,44 @@ public sealed class BookService : IBookService
         }
     }
 
+    public async Task<string?> GetBookNoteAsync(Guid bookId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.GetFromJsonAsync<BookNoteResponse>($"api/books/{bookId}/note", cancellationToken);
+            return response?.Note;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SaveNoteResult> SaveBookNoteAsync(Guid bookId, string note, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.PutAsJsonAsync($"api/books/{bookId}/note", new SaveBookNoteRequest(note), cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new SaveNoteResult(true, null);
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new SaveNoteResult(false, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
+            }
+
+            var message = await ReadProblemMessageAsync(response, "ذخیرهٔ یادداشت ناموفق بود؛ دوباره تلاش کنید.");
+            return new SaveNoteResult(false, message);
+        }
+        catch
+        {
+            return new SaveNoteResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
     public async Task<DownloadResult> DownloadBookAsync(Guid bookId, CancellationToken cancellationToken = default)
     {
         try
@@ -155,18 +237,41 @@ public sealed class BookService : IBookService
         var content = await response.Content.ReadAsStringAsync();
         var message = ProblemDetailsParser.ReadMessage(content);
 
-        if (message is not null &&
-            message.Contains("already in the user's library", StringComparison.OrdinalIgnoreCase))
+        if (message is null)
+        {
+            return fallback;
+        }
+
+        if (message.Contains("already in the user's library", StringComparison.OrdinalIgnoreCase))
         {
             return "این کتاب قبلاً به کتابخانهٔ شما اضافه شده است.";
         }
 
-        if (message is not null &&
-            message.Contains("not in the user's library", StringComparison.OrdinalIgnoreCase))
+        if (message.Contains("not in the user's library", StringComparison.OrdinalIgnoreCase))
         {
             return "این کتاب در کتابخانهٔ شما نیست.";
         }
 
-        return message ?? fallback;
+        if (message == "Note must not exceed 1000 characters." || message == "BookNote.TooLong")
+        {
+            return "یادداشت نباید بیشتر از ۱۰۰۰ کاراکتر باشد.";
+        }
+
+        if (message == "Book.NotFound" || message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return "کتاب پیدا نشد.";
+        }
+
+        if (message == "Book.Inactive" || message.Contains("is deactivated", StringComparison.OrdinalIgnoreCase))
+        {
+            return "این کتاب در حال حاضر غیرفعال است.";
+        }
+
+        if (message == "Book.FileMissing" || message.Contains("file is missing", StringComparison.OrdinalIgnoreCase))
+        {
+            return "فایل کتاب موجود نیست.";
+        }
+
+        return message;
     }
 }

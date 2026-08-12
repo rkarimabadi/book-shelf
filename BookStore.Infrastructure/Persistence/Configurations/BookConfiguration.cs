@@ -18,6 +18,12 @@ public sealed class BookConfiguration : IEntityTypeConfiguration<Book>
             .IsRequired()
             .HasMaxLength(100);
 
+        // Column default so rows created before categories existed land in «متفرقه» (General).
+        builder.Property(b => b.Category)
+            .IsRequired()
+            .HasMaxLength(50)
+            .HasDefaultValue(BookCategories.General);
+
         builder.Property(b => b.Description);
 
         builder.Property(b => b.CoverImagePath);

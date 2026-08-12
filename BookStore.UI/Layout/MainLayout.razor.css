@@ -27,9 +27,11 @@
     min-width: 0;
 }
 
+/* ---------- primary navigation ---------- */
+
 .app-nav {
     display: flex;
-    gap: var(--space-4);
+    gap: var(--space-1);
 }
 
 .app-nav ::deep a {
@@ -38,17 +40,29 @@
     min-height: var(--tap-min);
     display: inline-flex;
     align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav ::deep a:hover {
+    background: var(--fill);
 }
 
 .app-nav ::deep a.active {
     color: var(--color-blue);
+    background: rgba(0, 122, 255, 0.1);
+    font-weight: 600;
 }
+
+/* ---------- auth side ---------- */
 
 .app-auth {
     margin-inline-start: auto;
     display: flex;
     align-items: center;
-    gap: var(--space-4);
+    gap: var(--space-3);
 }
 
 .app-auth ::deep a.app-link {
@@ -57,21 +71,187 @@
     min-height: var(--tap-min);
     display: inline-flex;
     align-items: center;
-}
-
-.app-user {
-    color: var(--label-secondary);
-}
-
-.app-logout {
-    min-height: var(--tap-min);
+    gap: var(--space-2);
     padding: 0 var(--space-4);
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(0, 122, 255, 0.35);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-auth ::deep a.app-link:hover {
+    background: rgba(0, 122, 255, 0.08);
+}
+
+.app-auth ::deep a.app-link-register {
+    background: var(--color-blue);
+    border-color: var(--color-blue);
+    color: #fff;
+}
+
+.app-auth ::deep a.app-link-register:hover {
+    background: var(--color-blue);
+    filter: brightness(1.05);
+}
+
+/* ---------- user menu (avatar + dropdown) ---------- */
+
+.user-menu {
+    position: relative;
+}
+
+.user-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--tap-min);
+    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
     border: none;
     border-radius: var(--radius-full);
     background: var(--fill);
     color: var(--label);
     font-size: var(--text-body);
+    cursor: pointer;
+    transition: background 0.15s ease;
 }
+
+.user-menu-trigger:hover {
+    background: rgba(120, 120, 128, 0.3);
+}
+
+.user-menu-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-full);
+    background: var(--color-blue);
+    color: #fff;
+    font-size: 1rem;
+    margin-right: -5px;
+}
+
+.user-menu-name {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-menu-caret {
+    font-size: 0.75rem;
+    color: var(--label-secondary);
+}
+
+.user-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+}
+
+.user-dropdown {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + var(--space-2));
+    z-index: 101;
+    min-width: 15rem;
+    padding: var(--space-1);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    animation: user-dropdown-in 0.15s ease-out;
+}
+
+.user-dropdown ::deep a,
+.user-dropdown-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-height: 2.75rem;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--label);
+    font-size: var(--text-body);
+    font-family: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.user-dropdown ::deep a:hover,
+.user-dropdown-logout:hover {
+    background: var(--fill);
+}
+
+.user-dropdown-logout {
+    color: var(--color-red);
+}
+
+.user-dropdown-logout:hover {
+    background: rgba(255, 59, 48, 0.1);
+}
+
+.user-dropdown-logout:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+@keyframes user-dropdown-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---------- admin second-line strip ---------- */
+
+.admin-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-5);
+    background: var(--background-grouped);
+    border-bottom: 1px solid var(--separator);
+    overflow-x: auto;
+}
+
+.admin-nav ::deep a {
+    color: var(--label-secondary);
+    text-decoration: none;
+    white-space: nowrap;
+    min-height: var(--tap-min);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-subhead);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-nav ::deep a:hover {
+    background: var(--fill);
+}
+
+.admin-nav ::deep a.active {
+    color: var(--color-blue);
+    background: rgba(0, 122, 255, 0.12);
+    font-weight: 600;
+}
+
+/* ---------- content ---------- */
 
 .app-content {
     padding: var(--space-5);
@@ -79,87 +259,117 @@
     margin: 0 auto;
 }
 
-/* Hamburger toggle: hidden on desktop, shown below the breakpoint */
-.menu-toggle {
+/* ---------- bottom navigation (mobile only) ---------- */
+/* The .app-nav links are mirrored in the fixed bottom bar on small screens;
+   on desktop the header nav stays in its original place. */
+.bottom-nav {
     display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    width: var(--tap-min);
-    height: var(--tap-min);
-    padding: 0;
-    border: none;
-    background: none;
-    cursor: pointer;
 }
 
-.menu-toggle-bar {
-    display: block;
-    width: 22px;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--label);
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
+/* ---------- mobile: icon-only nav, avatar-only user pill ---------- */
 
-.menu-toggle.is-open .menu-toggle-bar:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-}
-
-.menu-toggle.is-open .menu-toggle-bar:nth-child(2) {
-    opacity: 0;
-}
-
-.menu-toggle.is-open .menu-toggle-bar:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
-}
-
-@media (max-width: 1023.98px) {
-    .menu-toggle {
-        display: inline-flex;
-        margin-inline-start: auto;
+@media (max-width: 768px) {
+    .user-menu-avatar {
+        margin-right: 0;
+    }
+    .app-header {
+        gap: var(--space-3);
+        padding: var(--space-2) var(--space-3);
     }
 
     .app-menu {
-        display: none;
-        flex-basis: 100%;
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--space-3);
-        padding: var(--space-3) 0 var(--space-2);
-        border-top: 1px solid var(--separator);
+        gap: var(--space-2);
     }
 
-    .app-menu.is-open {
-        display: flex;
-    }
-
+    /* app-nav moves to the fixed bottom bar on mobile (see .bottom-nav below). */
     .app-nav {
-        flex-direction: column;
-        gap: var(--space-1);
-    }
-
-    .app-nav ::deep a {
-        padding: var(--space-2);
-        border-radius: var(--radius-md);
-    }
-
-    .app-nav ::deep a.active {
-        background: rgba(0, 122, 255, 0.1);
+        display: none;
     }
 
     .app-auth {
-        flex-direction: column;
-        align-items: stretch;
         gap: var(--space-2);
-        margin-inline-start: 0;
-        padding: 0 var(--space-2);
     }
 
-    .app-auth ::deep a.app-link,
-    .app-logout {
+        .app-auth ::deep a.app-link {
+            padding: 0 var(--space-3);
+        }
+
+    /* The name disappears on mobile; the avatar (and chevron) remain. display:none is fine here
+       because the trigger's aria-label (built from the user name) keeps it accessible. */
+    .user-menu-trigger {
+        padding: 6px;
+    }
+    .user-menu-caret {
+        display: none;
+    }
+    .user-menu-name {
+        display: none;
+    }
+
+    /* Admin strip stays as-is (visible below the header on every screen). */
+    .admin-nav {
+        padding: var(--space-1) var(--space-3);
+    }
+
+    /* Bottom navigation bar (mirrors .app-nav; hidden on desktop via the base rule).
+       Apple-style: translucent material surface, hairline border, accent-tinted
+       active icon+label, safe-area aware for the home-indicator. */
+    .bottom-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        gap: var(--space-3);
+        /* auto-height: icons/lables + safe-area padding; no fixed height so it
+           adapts to the device's home-indicator inset. */
+        padding: var(--space-1) var(--space-4);
+        padding-block-end: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
+        position: fixed;
+        inset-block-end: 0;
+        inset-inline: 0;
+        background: var(--background-grouped);
+        background: color-mix(in srgb, var(--background-grouped) 82%, transparent);
+        border-top: 1px solid var(--separator);
+        box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        -webkit-tap-highlight-color: transparent;
+        z-index: 90;
+    }
+
+    .bottom-nav ::deep a.bottom-nav-item {
+        color: var(--label-secondary);
+        text-decoration: none;
+        min-height: var(--tap-min);
+        min-width: 44px;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        text-align: center;
+        gap: 1px;
+        padding: var(--space-1);
+        border-radius: var(--radius-full);
+        font-size: 22px;
+        line-height: 1.2;
+        transition: color 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
+    }
+
+        .bottom-nav ::deep a.bottom-nav-item:hover {
+            color: var(--color-blue);
+        }
+
+    /* Active tab: iOS-style accent tint on icon + label (no tinted background). */
+    .bottom-nav ::deep a.bottom-nav-item.active {
+        color: var(--color-blue);
+    }
+
+    .bottom-nav-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    /* Keep page content above the fixed bottom bar. */
+    .app-content {
+        padding-bottom: calc(var(--space-5) + 60px);
     }
 }

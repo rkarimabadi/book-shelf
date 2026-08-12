@@ -35,6 +35,9 @@ else
     [Inject]
     private NavigationManager Nav { get; set; } = default!;
 
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
     private BookResponse? _book;
     private bool _error;
     private bool _isBusy;
@@ -79,6 +82,7 @@ else
 
             if (result.Success)
             {
+                ToastService.ShowSuccess("تغییرات کتاب ذخیره شد.");
                 Nav.NavigateTo("/admin");
                 return;
             }

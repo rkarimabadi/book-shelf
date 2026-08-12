@@ -61,6 +61,18 @@ public class AuthStateProvider : AuthenticationStateProvider
         NotifyStateChanged();
     }
 
+    /// <summary>
+    /// Persists a token pair WITHOUT notifying the auth state. Used by the Google OAuth
+    /// bounce page, which immediately full-reloads to the target route: raising a
+    /// notification there makes AuthorizeRouteView re-create the page (double navigation),
+    /// while a fresh boot reads the tokens and builds the authenticated shell reliably.
+    /// </summary>
+    public async Task StoreTokensAsync(string accessToken, string refreshToken)
+    {
+        await _js.InvokeVoidAsync("localStorage.setItem", TokenStorageKey, accessToken);
+        await _js.InvokeVoidAsync("localStorage.setItem", RefreshTokenStorageKey, refreshToken);
+    }
+
     public async Task SignOutAsync()
     {
         CurrentSession = null;

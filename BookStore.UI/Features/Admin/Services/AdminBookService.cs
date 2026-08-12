@@ -23,9 +23,12 @@ public sealed class AdminBookService : IAdminBookService
     {
         try
         {
-            return await _http.GetFromJsonAsync<List<BookResponse>>(
-                "api/books?includeInactive=true",
+            // The list endpoint is paged; the admin page shows the full catalog (incl. inactive),
+            // so grab the first page with a generous page size.
+            var paged = await _http.GetFromJsonAsync<PagedBooksResponse>(
+                "api/books?includeInactive=true&pageSize=500",
                 cancellationToken);
+            return paged?.Items;
         }
         catch
         {
@@ -116,6 +119,7 @@ public sealed class AdminBookService : IAdminBookService
 
         content.Add(new StringContent(form.Title), "title");
         content.Add(new StringContent(form.Author), "author");
+        content.Add(new StringContent(form.Category), "category");
         content.Add(new StringContent(form.Description ?? string.Empty), "description");
 
         if (form.CoverFile is not null)
@@ -178,11 +182,16 @@ public sealed class AdminBookService : IAdminBookService
         "Author is required." => "نویسنده الزامی است.",
         "Book file is required." => "فایل کتاب (EPUB) الزامی است.",
         "Book.FileRequired" => "فایل کتاب (EPUB) الزامی است.",
+        "Category is required." => "دسته‌بندی را انتخاب کنید.",
+        "Category is invalid." => "دسته‌بندی معتبر نیست.",
+        "Book.InvalidCategory" => "دسته‌بندی معتبر نیست.",
         "Title must not exceed 200 characters." => "عنوان نباید بیشتر از ۲۰۰ کاراکتر باشد.",
         "Book.TitleTooLong" => "عنوان نباید بیشتر از ۲۰۰ کاراکتر باشد.",
         "Author must not exceed 100 characters." => "نام نویسنده نباید بیشتر از ۱۰۰ کاراکتر باشد.",
         "Book.AuthorTooLong" => "نام نویسنده نباید بیشتر از ۱۰۰ کاراکتر باشد.",
+        "Book.Inactive" => "این کتاب در حال حاضر غیرفعال است.",
         _ when message.Contains("not found", StringComparison.OrdinalIgnoreCase) => "کتاب پیدا نشد.",
+        _ when message.Contains("is deactivated", StringComparison.OrdinalIgnoreCase) => "این کتاب در حال حاضر غیرفعال است.",
         _ => message
     };
 }

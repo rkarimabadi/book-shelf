@@ -1,0 +1,83 @@
+@if (Book is not null)
+{
+    var isBusy = TogglingId == Book.Id;
+
+    <div class="admin-book-row @(Book.IsActive ? "" : "is-inactive")" @key="Book.Id">
+        <div class="admin-book-cover">
+            <BookCover Path="@Book.CoverImagePath" Alt="@Book.Title" Eager="true" />
+        </div>
+
+        <div class="admin-book-info">
+            <h3 class="admin-book-title">
+                @Book.Title
+                <span class="admin-book-status-dot @(Book.IsActive ? "status-active" : "status-inactive")"
+                      aria-hidden="true"></span>
+                @if (!Book.IsActive)
+                {
+                    <span class="admin-book-badge">
+                        <i class="bi bi-eye-slash" aria-hidden="true"></i>
+                        غیرفعال
+                    </span>
+                }
+            </h3>
+            <p class="admin-book-author">
+                <i class="bi bi-person" aria-hidden="true"></i>
+                @Book.Author
+            </p>
+            @if (!string.IsNullOrWhiteSpace(Book.Category))
+            {
+                <span class="admin-book-category">
+                    <i class="bi bi-tag" aria-hidden="true"></i>
+                    @Book.Category
+                </span>
+            }
+            <span class="admin-book-date">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                @PersianDateFormatter.Format(Book.CreatedAt)
+            </span>
+        </div>
+
+        <div class="admin-book-actions">
+            <button type="button"
+                    class="admin-action @(Book.IsActive ? "admin-action-deactivate" : "admin-action-activate")"
+                    title="@(Book.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")"
+                    disabled="@isBusy"
+                    @onclick="OnToggleStatus">
+                @if (isBusy)
+                {
+                    <i class="bi bi-arrow-repeat bi-spin" aria-hidden="true"></i>
+                    @(Book.IsActive ? "در حال غیرفعال‌سازی..." : "در حال فعال‌سازی...")
+                }
+                else
+                {
+                    <i class="bi @(Book.IsActive ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+                    @(Book.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")
+                }
+            </button>
+
+            <a class="admin-action admin-action-edit" href="admin/edit/@Book.Id" title="ویرایش">
+                <i class="bi bi-pencil" aria-hidden="true"></i>
+                ویرایش
+            </a>
+
+            <button type="button" class="admin-action admin-action-delete" title="حذف" @onclick="OnDelete">
+                <i class="bi bi-trash3" aria-hidden="true"></i>
+                حذف
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public BookResponse Book { get; set; } = default!;
+
+    [Parameter]
+    public Guid? TogglingId { get; set; }
+
+    [Parameter]
+    public EventCallback OnToggleStatus { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+}

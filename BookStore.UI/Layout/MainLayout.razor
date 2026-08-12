@@ -2,72 +2,153 @@
 @inject IAuthenticationService AuthService
 @inject NavigationManager Nav
 @inject AuthStateProvider AuthState
+@inject ToastService ToastService
 
-<div class="app-header">
+<header class="app-header">
     <a class="app-brand" href="">
-        <img class="app-logo" src="/images/app/header-logo.png" alt="قفسه کتاب" />
+        <img class="app-logo" src="/images/app/header-logo.png" alt="خانه کتاب" />
     </a>
 
-    <button type="button"
-            class="menu-toggle @(_menuOpen ? "is-open" : "")"
-            aria-label="باز و بسته کردن منو"
-            aria-expanded="@_menuOpen"
-            @onclick="ToggleMenu">
-        <span class="menu-toggle-bar"></span>
-        <span class="menu-toggle-bar"></span>
-        <span class="menu-toggle-bar"></span>
-    </button>
-
-    <div class="app-menu @(_menuOpen ? "is-open" : "")">
-        <nav class="app-nav">
-            <NavLink href="" Match="NavLinkMatch.All" @onclick="CloseMenu">خانه</NavLink>
-            <NavLink href="books" @onclick="CloseMenu">کتاب‌ها</NavLink>
+    <div class="app-menu">
+        <nav class="app-nav" aria-label="ناوبری اصلی">
+            <NavLink href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house" aria-hidden="true"></i>
+                <span class="app-nav-label">خانه</span>
+            </NavLink>
+            <NavLink href="books">
+                <i class="bi bi-book" aria-hidden="true"></i>
+                <span class="app-nav-label">کتاب‌ها</span>
+            </NavLink>
             <AuthorizeView>
                 <Authorized>
-                    <NavLink href="library" @onclick="CloseMenu">کتابخانه</NavLink>
-                    <NavLink href="change-password" @onclick="CloseMenu">تغییر رمز</NavLink>
-                </Authorized>
-            </AuthorizeView>
-            <AuthorizeView Roles="Admin">
-                <Authorized>
-                    <NavLink href="admin" @onclick="CloseMenu">مدیریت</NavLink>
-                    <NavLink href="admin/users" @onclick="CloseMenu">کاربران</NavLink>
+                    <NavLink href="library">
+                        <i class="bi bi-bookmark" aria-hidden="true"></i>
+                        <span class="app-nav-label">کتابخانه</span>
+                    </NavLink>
                 </Authorized>
             </AuthorizeView>
         </nav>
+
         <div class="app-auth">
             <AuthorizeView>
                 <Authorized Context="auth">
-                    <span class="app-user">سلام، @auth.User.Identity?.Name</span>
-                    <button type="button" class="app-logout" @onclick="HandleLogout" disabled="@IsLoggingOut">
-                        @(IsLoggingOut ? "در حال خروج..." : "خروج")
-                    </button>
+                    <div class="user-menu">
+                        <button type="button"
+                                class="user-menu-trigger"
+                                aria-haspopup="true"
+                                aria-expanded="@_userMenuOpen"
+                                aria-label="@($"حساب کاربری {auth.User.Identity?.Name}")"
+                                @onclick="ToggleUserMenu">
+                            <span class="user-menu-avatar" aria-hidden="true">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+                            <span class="user-menu-name">@(auth.User.Identity?.Name ?? "کاربر")</span>
+                            <i class="bi @(_userMenuOpen ? "bi-chevron-up" : "bi-chevron-down") user-menu-caret" aria-hidden="true"></i>
+                        </button>
+
+                        @if (_userMenuOpen)
+                        {
+                            <div class="user-menu-overlay" @onclick="CloseUserMenu"></div>
+                            <div class="user-dropdown" role="menu" aria-label="حساب کاربری">
+                                <NavLink href="change-password" role="menuitem" @onclick="CloseUserMenu">
+                                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                                    تغییر رمز
+                                </NavLink>
+                                <button type="button" class="user-dropdown-logout" role="menuitem"
+                                        disabled="@IsLoggingOut"
+                                        @onclick="HandleLogout">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    @(IsLoggingOut ? "در حال خروج..." : "خروج")
+                                </button>
+                            </div>
+                        }
+                    </div>
                 </Authorized>
                 <NotAuthorized>
-                    <NavLink class="app-link" href="login" @onclick="CloseMenu">ورود</NavLink>
-                    <NavLink class="app-link" href="register" @onclick="CloseMenu">ثبت‌نام</NavLink>
+                    <NavLink class="app-link" href="login">
+                        <i class="bi bi-box-arrow-in-left" aria-hidden="true"></i>
+                        <span class="app-link-label">ورود</span>
+                    </NavLink>
+                    <NavLink class="app-link app-link-register" href="register">
+                        <i class="bi bi-person-plus" aria-hidden="true"></i>
+                        <span class="app-link-label">ثبت‌نام</span>
+                    </NavLink>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
     </div>
-</div>
+</header>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <nav class="admin-nav" aria-label="مدیریت">
+            <NavLink href="admin"
+                     Match="NavLinkMatch.All"
+                     ActiveClass=""
+                     class="@AdminBooksClass">
+                <i class="bi bi-collection" aria-hidden="true"></i>
+                <span class="admin-nav-label">مدیریت کتاب‌ها</span>
+            </NavLink>
+            <NavLink href="admin/users" Match="NavLinkMatch.Prefix">
+                <i class="bi bi-people" aria-hidden="true"></i>
+                <span class="admin-nav-label">مدیریت کاربران</span>
+            </NavLink>
+        </nav>
+    </Authorized>
+</AuthorizeView>
 
 <main class="app-content">
     @Body
 </main>
 
+<ToastHost />
+
+<nav class="bottom-nav" aria-label="ناوبری">
+    <NavLink href="" Match="NavLinkMatch.All" class="bottom-nav-item">
+        <i class="bi bi-house" aria-hidden="true"></i>
+        <span class="bottom-nav-label">خانه</span>
+    </NavLink>
+    <NavLink href="books" class="bottom-nav-item">
+        <i class="bi bi-book" aria-hidden="true"></i>
+        <span class="bottom-nav-label">کتاب‌ها</span>
+    </NavLink>
+    <AuthorizeView>
+        <Authorized>
+            <NavLink href="library" class="bottom-nav-item">
+                <i class="bi bi-bookmark" aria-hidden="true"></i>
+                <span class="bottom-nav-label">کتابخانه</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
+</nav>
+
 @code {
     private bool IsLoggingOut;
-    private bool _menuOpen;
+    private bool _userMenuOpen;
 
-    private void ToggleMenu()
+    private void ToggleUserMenu()
     {
-        _menuOpen = !_menuOpen;
+        _userMenuOpen = !_userMenuOpen;
     }
 
-    private void CloseMenu()
+    private void CloseUserMenu()
     {
-        _menuOpen = false;
+        _userMenuOpen = false;
+    }
+
+    // "مدیریت کتاب‌ها" stays highlighted on /admin, /admin/add, /admin/edit but not on /admin/users
+    // (the two admin tabs shouldn't both light up at once). NavLink can't express "prefix minus one
+    // path", so we compute the class manually and let NavLink handle the exact match.
+    private string AdminBooksClass
+    {
+        get
+        {
+            var path = Nav.ToBaseRelativePath(Nav.Uri).TrimStart('/');
+            var inAdminUsers = path.StartsWith("admin/users", StringComparison.OrdinalIgnoreCase);
+            var inAdmin = path.Equals("admin", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("admin/", StringComparison.OrdinalIgnoreCase);
+            return inAdmin && !inAdminUsers ? "active" : string.Empty;
+        }
     }
 
     private async Task HandleLogout()
@@ -82,7 +163,8 @@
         {
             var refreshToken = AuthState.CurrentSession?.RefreshToken ?? string.Empty;
             await AuthService.LogoutAsync(refreshToken);
-            _menuOpen = false;
+            ToastService.ShowSuccess("با موفقیت خارج شدید.");
+            _userMenuOpen = false;
             Nav.NavigateTo("/");
         }
         finally

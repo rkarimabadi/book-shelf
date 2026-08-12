@@ -1,12 +1,22 @@
 @page "/login"
 @inject IAuthenticationService AuthService
 @inject NavigationManager Nav
+@inject ToastService ToastService
 
 <PageTitle>ورود</PageTitle>
 
 <div class="auth-card">
     <h1 class="auth-title">ورود</h1>
     <p class="auth-subtitle">برای ادامه، وارد حساب خود شوید</p>
+
+    @if (GoogleEnabled)
+    {
+        <a class="google-button" href="@GoogleLoginUrl">
+            <i class="bi bi-google" aria-hidden="true"></i>
+            ورود با گوگل
+        </a>
+        <div class="auth-divider" role="separator"><span>یا</span></div>
+    }
 
     <form @onsubmit="HandleLogin" novalidate>
         <div class="auth-field">
@@ -31,12 +41,8 @@
             <a href="forgot-password">رمز عبور را فراموش کرده‌اید؟</a>
         </div>
 
-        @if (ErrorMessage is not null)
-        {
-            <div class="auth-error" role="alert">@ErrorMessage</div>
-        }
-
         <button type="submit" class="auth-button" disabled="@IsBusy">
+            <i class="bi @(IsBusy ? "bi-arrow-repeat bi-spin" : "bi-box-arrow-in-left")" aria-hidden="true"></i>
             @(IsBusy ? "در حال ورود..." : "ورود")
         </button>
     </form>
@@ -53,12 +59,19 @@
     private string Email = string.Empty;
     private string Password = string.Empty;
     private bool IsBusy;
-    private string? ErrorMessage;
+    private bool GoogleEnabled;
     private Dictionary<string, string> FieldErrors = new();
+
+    private string GoogleLoginUrl =>
+        $"/api/auth/google-login?returnUrl={Uri.EscapeDataString(ReturnUrl is { } url && url.StartsWith('/') ? url : "/")}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        GoogleEnabled = await AuthService.IsGoogleEnabledAsync();
+    }
 
     private async Task HandleLogin()
     {
-        ErrorMessage = null;
         FieldErrors = new();
 
         if (string.IsNullOrWhiteSpace(Email))
@@ -83,12 +96,14 @@
         IsBusy = true;
         try
         {
-            await AuthService.LoginAsync(new LoginRequest(Email.Trim(), Password));
+            var result = await AuthService.LoginAsync(new LoginRequest(Email.Trim(), Password));
+            var name = string.IsNullOrWhiteSpace(result.FirstName) ? string.Empty : $"، {result.FirstName}";
+            ToastService.ShowSuccess($"خوش آمدید{name}!");
             Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ToastService.ShowError(ex.Message);
         }
         finally
         {

@@ -15,3 +15,6 @@ public record SetUserStatusRequest(
 
 public record SetUserRoleRequest(
     string Role);
+
+public record ResetUserPasswordRequest(
+    string Password);

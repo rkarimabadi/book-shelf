@@ -1,0 +1,172 @@
+@if (User is not null)
+{
+    var isSelf = User.Id == CurrentUserId;
+    var isBusy = BusyId == User.Id;
+    var isAdmin = User.Role == "Admin";
+
+    <div class="admin-user-row @(User.IsActive ? "" : "is-inactive")" @key="User.Id">
+        <div class="admin-user-avatar @(isAdmin ? "avatar-admin" : "avatar-user")" aria-hidden="true">
+            @GetInitials(User)
+        </div>
+
+        <div class="admin-user-info">
+            <h3 class="admin-user-name">
+                @User.FirstName @User.LastName
+                <span class="admin-status-dot @(User.IsActive ? "status-active" : "status-blocked")"
+                      aria-hidden="true"></span>
+                @if (User.IsActive == false)
+                {
+                    <span class="admin-user-badge">
+                        <i class="bi bi-person-slash" aria-hidden="true"></i>
+                        مسدود
+                    </span>
+                }
+            </h3>
+            <p class="admin-user-email">
+                <i class="bi bi-envelope" aria-hidden="true"></i>
+                @User.Email
+            </p>
+            <span class="admin-user-date">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                عضویت: @PersianDateFormatter.Format(User.CreatedAt)
+            </span>
+        </div>
+
+        <div class="admin-user-actions">
+            <span class="admin-role-badge @(isAdmin ? "role-admin" : "role-user")">
+                <i class="bi @(isAdmin ? "bi-shield-check" : "bi-person")" aria-hidden="true"></i>
+                @(isAdmin ? "ادمین" : "کاربر")
+            </span>
+
+            @if (isSelf)
+            {
+                <span class="admin-user-self">
+                    <i class="bi bi-person-check" aria-hidden="true"></i>
+                    حساب شما
+                </span>
+            }
+            else
+            {
+                <div class="row-menu">
+                    <button type="button"
+                            class="row-menu-trigger"
+                            aria-haspopup="true"
+                            aria-expanded="@_menuOpen"
+                            aria-label="عملیات کاربر"
+                            @onclick="ToggleMenu">
+                        <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                    </button>
+
+                    @if (_menuOpen)
+                    {
+                        <div class="row-menu-overlay" @onclick="CloseMenu"></div>
+                        <div class="row-dropdown" role="menu" aria-label="عملیات کاربر">
+                            <button type="button"
+                                    class="row-menu-item"
+                                    role="menuitem"
+                                    disabled="@isBusy"
+                                    @onclick="HandleToggleRole">
+                                <i class="bi @(isAdmin ? "bi-person-down" : "bi-person-up")" aria-hidden="true"></i>
+                                <span>@(isAdmin ? "تبدیل به کاربر" : "ارتقا به ادمین")</span>
+                            </button>
+
+                            <button type="button"
+                                    class="row-menu-item"
+                                    role="menuitem"
+                                    disabled="@isBusy"
+                                    @onclick="HandleResetPassword">
+                                <i class="bi bi-key" aria-hidden="true"></i>
+                                <span>تغییر رمز</span>
+                            </button>
+
+                            <button type="button"
+                                    class="row-menu-item"
+                                    role="menuitem"
+                                    disabled="@isBusy"
+                                    @onclick="HandleToggleStatus">
+                                <i class="bi @(User.IsActive ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+                                <span>@(User.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</span>
+                            </button>
+
+                            <div class="row-menu-separator" aria-hidden="true"></div>
+
+                            <button type="button"
+                                    class="row-menu-item row-menu-item-danger"
+                                    role="menuitem"
+                                    @onclick="HandleDelete">
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                <span>حذف</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public UserResponse User { get; set; } = default!;
+
+    [Parameter]
+    public Guid? CurrentUserId { get; set; }
+
+    [Parameter]
+    public Guid? BusyId { get; set; }
+
+    [Parameter]
+    public EventCallback OnToggleRole { get; set; }
+
+    [Parameter]
+    public EventCallback OnToggleStatus { get; set; }
+
+    [Parameter]
+    public EventCallback OnResetPassword { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private bool _menuOpen;
+
+    private void ToggleMenu()
+    {
+        _menuOpen = !_menuOpen;
+    }
+
+    private void CloseMenu()
+    {
+        _menuOpen = false;
+    }
+
+    private async Task HandleToggleRole()
+    {
+        _menuOpen = false;
+        await OnToggleRole.InvokeAsync();
+    }
+
+    private async Task HandleToggleStatus()
+    {
+        _menuOpen = false;
+        await OnToggleStatus.InvokeAsync();
+    }
+
+    private async Task HandleResetPassword()
+    {
+        _menuOpen = false;
+        await OnResetPassword.InvokeAsync();
+    }
+
+    private async Task HandleDelete()
+    {
+        _menuOpen = false;
+        await OnDelete.InvokeAsync();
+    }
+
+    private static string GetInitials(UserResponse user)
+    {
+        var first = string.IsNullOrWhiteSpace(user.FirstName) ? string.Empty : user.FirstName[..1];
+        var last = string.IsNullOrWhiteSpace(user.LastName) ? string.Empty : user.LastName[..1];
+        return $"{first}{last}".Trim();
+    }
+}

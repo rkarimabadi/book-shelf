@@ -1,11 +1,64 @@
 @page "/books"
+@implements IDisposable
 
 <PageTitle>کتاب‌ها</PageTitle>
 
 <div class="books-header">
     <h1>کتاب‌ها</h1>
-    <p class="books-subtitle">مجموعهٔ کامل کتاب‌های موجود</p>
+    <p class="books-subtitle">
+        @if (_totalCount > 0)
+        {
+            @if (_totalPages > 1)
+            {
+                <text>نمایش @RangeStart تا @RangeEnd از @_totalCount کتاب@FilterSuffix</text>
+            }
+            else
+            {
+                <text>مجموعهٔ @_totalCount کتاب@FilterSuffix</text>
+            }
+        }
+        else
+        {
+            <text>مجموعهٔ کامل کتاب‌های موجود</text>
+        }
+    </p>
 </div>
+
+<div class="books-search">
+    <i class="bi bi-search books-search-icon" aria-hidden="true"></i>
+    <input type="search"
+           class="books-search-input"
+           placeholder="جستجو بر اساس عنوان..."
+           aria-label="جستجوی کتاب بر اساس عنوان"
+           @bind="_search"
+           @bind:event="oninput"
+           @bind:after="OnSearchChangedAsync" />
+    @if (!string.IsNullOrEmpty(_search))
+    {
+        <button type="button" class="books-search-clear" aria-label="پاک کردن جستجو" @onclick="ClearSearchAsync">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+    }
+</div>
+
+@if (_categories is not null && _categories.Count > 0)
+{
+    <div class="books-filters" role="group" aria-label="فیلتر بر اساس دسته">
+        <button type="button"
+                class="filter-chip @(_category is null ? "active" : "")"
+                @onclick="() => SelectCategoryAsync(null)">
+            همه
+        </button>
+        @foreach (var category in _categories)
+        {
+            <button type="button"
+                    class="filter-chip @(_category == category ? "active" : "")"
+                    @onclick="() => SelectCategoryAsync(category)">
+                @category
+            </button>
+        }
+    </div>
+}
 
 @if (_error)
 {
@@ -26,8 +79,17 @@ else if (_books is null)
 }
 else if (_books.Count == 0)
 {
-    <EmptyState Title="هنوز کتابی ثبت نشده است"
-                Message="به‌زودی کتاب‌های بیشتری به این مجموعه اضافه خواهند شد." />
+    @if (string.IsNullOrWhiteSpace(_search) && _category is null)
+    {
+        <EmptyState Title="هنوز کتابی ثبت نشده است"
+                    Message="به‌زودی کتاب‌های بیشتری به این مجموعه اضافه خواهند شد." />
+    }
+    else
+    {
+        <EmptyState Title="نتیجه‌ای یافت نشد"
+                    Message="هیچ کتابی با این جستجو پیدا نشد. عبارت دیگری را امتحان کنید."
+                    Icon="bi bi-search" />
+    }
 }
 else
 {
@@ -35,21 +97,89 @@ else
         @foreach (var book in _books)
         {
             <div class="col">
-                <BookCard Book="book" />
+                <BookCard Book="book" ShowEpubBadge="true" />
             </div>
         }
     </div>
+
+    @if (_totalPages > 1)
+    {
+        <Pager CurrentPage="_page"
+               TotalPages="_totalPages"
+               OnPageChanged="GoToPageAsync" />
+    }
 }
 
 @code {
+    private const int PageSize = 12;
+
     [Inject]
     private IBookService BookService { get; set; } = default!;
 
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
     private IReadOnlyList<BookResponse>? _books;
     private bool _error;
+    private int _page = 1;
+    private int _totalCount;
+    private int _totalPages = 1;
+    private string? _category;
+    private IReadOnlyList<string>? _categories;
+    private string _search = string.Empty;
+    private CancellationTokenSource? _searchCts;
+
+    private int RangeStart => _totalCount == 0 ? 0 : (_page - 1) * PageSize + 1;
+
+    private int RangeEnd => Math.Min(_page * PageSize, _totalCount);
+
+    private string FilterSuffix
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (_category is not null)
+            {
+                parts.Add($"دستهٔ «{_category}»");
+            }
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                parts.Add($"«{_search}»");
+            }
+            return parts.Count == 0 ? string.Empty : $" مطابق با {string.Join(" و ", parts)}";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        _categories = await BookService.GetCategoriesAsync();
+        await LoadAsync();
+    }
+
+    // Debounced title search: waits for a pause in typing, then resets to page 1 and reloads.
+    private async Task OnSearchChangedAsync()
+    {
+        _searchCts?.Cancel();
+        var cts = _searchCts = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(300, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        _searchCts?.Cancel();
+        _search = string.Empty;
+        _page = 1;
         await LoadAsync();
     }
 
@@ -57,7 +187,54 @@ else
     {
         _error = false;
         _books = null;
-        _books = await BookService.GetBooksAsync();
-        _error = _books is null;
+        // Reset the counters so the subtitle doesn't flash the previous page's range while loading.
+        _totalCount = 0;
+        _totalPages = 1;
+
+        var result = await BookService.GetBooksAsync(_page, PageSize, _category, _search);
+        if (result is null)
+        {
+            _error = true;
+            return;
+        }
+
+        _totalCount = result.TotalCount;
+        _totalPages = result.TotalPages;
+
+        // The requested page may no longer exist (e.g. books were deleted); fall back to the last page.
+        if (_page > _totalPages)
+        {
+            _page = _totalPages;
+            _books = null;
+            await LoadAsync();
+            return;
+        }
+
+        _books = result.Items;
+    }
+
+    private async Task SelectCategoryAsync(string? category)
+    {
+        if (category == _category)
+        {
+            return;
+        }
+
+        _category = category;
+        _page = 1;
+        await LoadAsync();
+    }
+
+    public void Dispose()
+    {
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+
+    private async Task GoToPageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+        await JS.InvokeVoidAsync("scrollTo", 0, 0);
     }
 }

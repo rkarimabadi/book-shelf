@@ -1,5 +1,12 @@
 <div class="empty-state">
-    <span class="empty-icon" aria-hidden="true">@Icon</span>
+    @if (Icon.StartsWith("bi ", StringComparison.Ordinal))
+    {
+        <span class="empty-icon"><i class="@Icon" aria-hidden="true"></i></span>
+    }
+    else
+    {
+        <span class="empty-icon" aria-hidden="true">@Icon</span>
+    }
     <h2 class="empty-title">@Title</h2>
     @if (!string.IsNullOrEmpty(Message))
     {
@@ -19,7 +26,7 @@
     public string Message { get; set; } = string.Empty;
 
     [Parameter]
-    public string Icon { get; set; } = "📚";
+    public string Icon { get; set; } = "bi bi-book";
 
     [Parameter]
     public RenderFragment? Action { get; set; }

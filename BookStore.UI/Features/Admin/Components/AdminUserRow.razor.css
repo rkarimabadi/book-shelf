@@ -1,0 +1,286 @@
+.admin-user-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.admin-user-row:hover {
+    border-color: rgba(0, 122, 255, 0.4);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-user-row:active {
+    transform: scale(0.995);
+}
+
+.admin-user-row.is-inactive {
+    opacity: 0.6;
+    background: var(--background-grouped);
+    border-style: dashed;
+}
+
+/* --- Avatar --- */
+.admin-user-avatar {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    color: #fff;
+    font-weight: 700;
+    font-size: var(--text-subhead);
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-sm);
+}
+
+.avatar-user {
+    background: linear-gradient(135deg, var(--fill-strong, #8e8e93), #636366);
+}
+
+.avatar-admin {
+    background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+}
+
+/* --- Info --- */
+.admin-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-user-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-headline);
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-status-dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+}
+
+.status-active {
+    background: var(--color-green);
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.18);
+}
+
+.status-blocked {
+    background: var(--color-red);
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.18);
+}
+
+.admin-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--color-red);
+    font-size: var(--text-caption1);
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.admin-user-email {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--label-secondary);
+    margin: var(--space-1) 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-email i {
+    font-size: var(--text-caption1);
+    opacity: 0.7;
+}
+
+.admin-user-date {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+    opacity: 0.8;
+}
+
+.admin-user-date i {
+    font-size: var(--text-caption1);
+    opacity: 0.7;
+}
+
+/* --- Actions --- */
+.admin-user-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.admin-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-caption1);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-role-badge.role-admin {
+    background: rgba(0, 122, 255, 0.12);
+    color: var(--color-blue);
+}
+
+.admin-role-badge.role-user {
+    background: var(--fill);
+    color: var(--label-secondary);
+}
+
+.admin-user-self {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-caption1);
+    color: var(--color-green);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* --- Per-row actions menu --- */
+.row-menu {
+    position: relative;
+}
+
+.row-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap-min);
+    height: var(--tap-min);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-full);
+    background: var(--background);
+    color: var(--label-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+}
+
+.row-menu-trigger:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+}
+
+.row-menu-trigger:active {
+    transform: scale(0.94);
+}
+
+.row-menu-trigger[aria-expanded="true"] {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+    background: var(--fill);
+}
+
+.row-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: transparent;
+}
+
+.row-dropdown {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    inset-inline-end: 0;
+    z-index: 101;
+    min-width: 13rem;
+    padding: var(--space-2);
+    background: var(--background);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.row-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--tap-min);
+    padding: 0 var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--label);
+    font-size: var(--text-subhead);
+    font-weight: 500;
+    text-align: start;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.row-menu-item i {
+    font-size: 1.05em;
+    opacity: 0.75;
+    flex-shrink: 0;
+}
+
+.row-menu-item:hover:not(:disabled) {
+    background: var(--fill);
+}
+
+.row-menu-item:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.row-menu-item-danger {
+    color: var(--color-red);
+}
+
+.row-menu-item-danger:hover:not(:disabled) {
+    background: rgba(255, 59, 48, 0.1);
+}
+
+.row-menu-separator {
+    height: 1px;
+    margin: var(--space-1) 0;
+    background: var(--separator);
+}
+
+@media (max-width: 768px) {
+    .admin-user-row {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+
+    .admin-user-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}

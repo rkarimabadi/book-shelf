@@ -1,0 +1,59 @@
+@page "/auth/callback"
+@inject AuthStateProvider AuthState
+@inject NavigationManager Nav
+@inject ToastService ToastService
+
+<PageTitle>ورود با گوگل</PageTitle>
+
+<div class="auth-card">
+    <LoadingSpinner Text="در حال تکمیل ورود با گوگل..." />
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "access_token")]
+    public string? AccessToken { get; set; }
+
+    [SupplyParameterFromQuery(Name = "refresh_token")]
+    public string? RefreshToken { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "google_error")]
+    public string? Error { get; set; }
+
+    private bool _handled;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_handled)
+        {
+            return;
+        }
+        _handled = true;
+
+        if (!string.IsNullOrEmpty(Error))
+        {
+            ToastService.ShowError("ورود با گوگل ناموفق بود. دوباره تلاش کنید.");
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(AccessToken) || string.IsNullOrWhiteSpace(RefreshToken))
+        {
+            ToastService.ShowError("پاسخ ورود گوگل معتبر نیست. دوباره تلاش کنید.");
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        // The server already exchanged the Google identity for our own JWT pair; the token
+        // carries the user's claims (name/email/role). Persist the pair, then FULL-RELOAD
+        // to the target route: a fresh boot reads the tokens and builds the authenticated
+        // shell reliably, whereas SPA navigation after NotifyAuthenticationStateChanged on
+        // this page leaves the layout stale (AuthorizeRouteView re-creates the page and the
+        // double navigation races). The welcome feedback is the logged-in header itself.
+        await AuthState.StoreTokensAsync(AccessToken, RefreshToken);
+
+        Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/", forceLoad: true);
+    }
+}

@@ -1,3 +1,38 @@
+/* ---------- Peyda (main app font) ----------
+   Loaded from wwwroot/fonts/Peyda/01-Standard/WebFonts/ (PeydaWeb family).
+   Only the weights actually used by the UI are declared: 400 (body), 600 (buttons/
+   sub-headings), 700 (titles). Browsers download a @font-face only when rendered text
+   needs that weight, so unused faces (100/200/300/500/800/900) would be dead CSS —
+   if a new weight is ever needed, add its face back here. font-display: swap avoids
+   invisible-text flash while a webfont downloads. */
+
+@font-face {
+    font-family: "PeydaWeb";
+    font-style: normal;
+    font-weight: 400;
+    src: url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff2/PeydaWeb-Regular.woff2') format('woff2'),
+         url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff/PeydaWeb-Regular.woff') format('woff');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "PeydaWeb";
+    font-style: normal;
+    font-weight: 600;
+    src: url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff2/PeydaWeb-SemiBold.woff2') format('woff2'),
+         url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff/PeydaWeb-SemiBold.woff') format('woff');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "PeydaWeb";
+    font-style: normal;
+    font-weight: 700;
+    src: url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff2/PeydaWeb-Bold.woff2') format('woff2'),
+         url('../fonts/Peyda/01-Standard/WebFonts/fonts/woff/PeydaWeb-Bold.woff') format('woff');
+    font-display: swap;
+}
+
 :root {
     /* system colors */
     --color-blue: #007AFF;
@@ -23,6 +58,14 @@
     --text-body: 17px;
     --text-subhead: 15px;
     --text-caption1: 12px;
+
+    /* Bootstrap components use their own font-stack variables (--bs-body-font-family,
+       --bs-btn-font-family; tooltips/popovers read --bs-font-sans-serif directly).
+       Point them all at the Peyda stack so no Bootstrap component ever falls back to
+       the system font. Monospace (code/kbd/pre) is intentionally left untouched. */
+    --bs-font-sans-serif: var(--font-fa);
+    --bs-body-font-family: var(--font-fa);
+    --bs-btn-font-family: var(--font-fa);
 
     /* spacing & radius */
     --space-1: 4px;
@@ -205,15 +248,6 @@ code {
     color: var(--color-red);
 }
 
-.auth-error {
-    padding: var(--space-2) var(--space-4);
-    margin-bottom: var(--space-4);
-    background: rgba(255, 59, 48, 0.1);
-    border: 1px solid rgba(255, 59, 48, 0.3);
-    border-radius: var(--radius-md);
-    color: var(--color-red);
-}
-
 .auth-success {
     padding: var(--space-3) var(--space-4);
     margin-bottom: var(--space-4);
@@ -241,6 +275,10 @@ code {
 .auth-button {
     width: 100%;
     min-height: var(--tap-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
     border: none;
     border-radius: var(--radius-full);
     background: var(--color-blue);
@@ -258,6 +296,64 @@ code {
     text-align: center;
     color: var(--label-secondary);
 }
+
+/* ---------- Google OAuth ---------- */
+
+.google-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-height: var(--tap-min);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-full);
+    background: var(--background);
+    color: var(--label);
+    font-size: var(--text-headline);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.google-button:hover {
+    background: var(--background-grouped);
+    border-color: var(--label-secondary);
+}
+
+.google-button .bi-google {
+    font-size: 1.15em;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-4) 0;
+    color: var(--label-secondary);
+    font-size: var(--text-caption1);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--separator);
+}
+
 .book-card {
     text-decoration: none !important;
+}
+
+/* ---------- bootstrap icons helpers ---------- */
+
+.bi-spin {
+    animation: bi-spin 1s linear infinite;
+}
+
+@keyframes bi-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }

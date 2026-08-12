@@ -12,6 +12,7 @@ public record UpdateBookCommand(
     Guid Id,
     string Title,
     string Author,
+    string Category,
     string Description,
     string? CoverImagePath,
     string? FilePath) : IRequest<ErrorOr<Book>>;
@@ -30,6 +31,10 @@ public class UpdateBookCommandValidator : AbstractValidator<UpdateBookCommand>
         RuleFor(x => x.Author)
             .NotEmpty().WithMessage("Author is required.")
             .MaximumLength(100).WithMessage("Author must not exceed 100 characters.");
+
+        RuleFor(x => x.Category)
+            .NotEmpty().WithMessage("Category is required.")
+            .Must(BookCategories.IsValid).WithMessage("Category is invalid.");
     }
 }
 
@@ -66,6 +71,7 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
         var updateResult = book.UpdateDetails(
             command.Title,
             command.Author,
+            command.Category,
             command.Description,
             command.CoverImagePath,
             command.FilePath);

@@ -22,19 +22,40 @@ public sealed class BookRepository : IBookRepository
         return _dbContext.Books.FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
     }
 
-    public Task<List<Book>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<(List<Book> Items, int TotalCount)> GetPageAsync(
+        int page,
+        int pageSize,
+        bool includeInactive = false,
+        string? category = null,
+        string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        return _dbContext.Books
-            .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-    }
+        var query = _dbContext.Books.AsQueryable();
 
-    public Task<List<Book>> GetActiveAsync(CancellationToken cancellationToken = default)
-    {
-        return _dbContext.Books
-            .Where(b => b.IsActive)
+        if (!includeInactive)
+        {
+            query = query.Where(b => b.IsActive);
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            query = query.Where(b => b.Category == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(b => b.Title.Contains(search));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
             .OrderByDescending(b => b.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public void Add(Book book)

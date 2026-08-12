@@ -28,6 +28,13 @@ namespace BookStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("متفرقه");
+
                     b.Property<string>("CoverImagePath")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -57,6 +64,36 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("BookStore.Core.Domain.Books.BookNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("BookNotes");
                 });
 
             modelBuilder.Entity("BookStore.Core.Domain.Users.LibraryEntry", b =>
@@ -174,6 +211,11 @@ namespace BookStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("HasPassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
@@ -230,6 +272,21 @@ namespace BookStore.Infrastructure.Migrations
                     b.HasIndex("ProcessedOnUtc", "OccurredOn");
 
                     b.ToTable("OutboxMessages");
+                });
+
+            modelBuilder.Entity("BookStore.Core.Domain.Books.BookNote", b =>
+                {
+                    b.HasOne("BookStore.Core.Domain.Books.Book", null)
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookStore.Core.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BookStore.Core.Domain.Users.LibraryEntry", b =>

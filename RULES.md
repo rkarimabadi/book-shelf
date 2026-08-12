@@ -7,7 +7,7 @@ read the relevant section there. Rules are grouped by layer and numbered (`R-01`
 so they can be referenced precisely (e.g. «violates R-12»).
 
 ---
-
+- **R-00** - Always answer in English.
 ## 1. Architecture & Dependency Direction
 
 - **R-01** — Strict Clean Architecture with DDD. Dependency direction is one-way:

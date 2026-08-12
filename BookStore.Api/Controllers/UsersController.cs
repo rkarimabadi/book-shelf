@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using BookStore.Application.Common.Security;
 using BookStore.Application.Features.Users.Commands.DeleteUser;
+using BookStore.Application.Features.Users.Commands.ResetUserPassword;
 using BookStore.Application.Features.Users.Commands.SetUserRole;
 using BookStore.Application.Features.Users.Commands.SetUserStatus;
 using BookStore.Application.Features.Users.Queries.GetUsers;
@@ -74,6 +75,23 @@ public sealed class UsersController : ApiController
         }
 
         var command = new SetUserRoleCommand(id, role, currentUserId.Value);
+        var result = await _sender.Send(command, cancellationToken);
+
+        return result.Match(
+            _ => NoContent(),
+            errors => Problem(errors));
+    }
+
+    [HttpPatch("{id:guid}/password")]
+    public async Task<IActionResult> ResetPassword(Guid id, ResetUserPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "User id claim is missing from the token.");
+        }
+
+        var command = new ResetUserPasswordCommand(id, request.Password, currentUserId.Value);
         var result = await _sender.Send(command, cancellationToken);
 
         return result.Match(

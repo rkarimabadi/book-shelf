@@ -9,7 +9,7 @@ namespace BookStore.Application.Features.Authentication.Commands.ChangePassword;
 
 public record ChangePasswordCommand(
     string Email,
-    string CurrentPassword,
+    string? CurrentPassword,
     string NewPassword) : IRequest<ErrorOr<Success>>;
 
 public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCommand>
@@ -20,8 +20,9 @@ public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCo
             .NotEmpty().WithMessage("Email is required.")
             .EmailAddress().WithMessage("A valid email address is required.");
 
-        RuleFor(x => x.CurrentPassword)
-            .NotEmpty().WithMessage("Current password is required.");
+        // CurrentPassword is nullable on purpose: Google-created accounts have no usable
+        // password yet, so the handler skips the verification for them (they SET a
+        // password). For accounts that DO have a password the handler still verifies it.
 
         RuleFor(x => x.NewPassword)
             .NotEmpty().WithMessage("New password is required.")
@@ -53,9 +54,12 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
             return userResult.Errors;
         }
 
-        // PBKDF2 hashes are salted, so the current password must be verified against the
-        // stored hash rather than comparing freshly hashed strings (see pitfall 2).
-        if (!_passwordHasher.VerifyPassword(command.CurrentPassword, userResult.Value.PasswordHash))
+        // Google-created accounts have no usable password (HasPassword == false), so they
+        // can SET one without proving a current password. Accounts that DO have a password
+        // must still verify it — PBKDF2 hashes are salted, so verification must run against
+        // the stored hash rather than comparing freshly hashed strings (see pitfall 2).
+        if (userResult.Value.HasPassword
+            && !_passwordHasher.VerifyPassword(command.CurrentPassword ?? string.Empty, userResult.Value.PasswordHash))
         {
             return UserErrors.Validation.InvalidCurrentPassword;
         }

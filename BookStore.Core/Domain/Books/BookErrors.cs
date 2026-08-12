@@ -17,5 +17,8 @@ public static class BookErrors
 
         public static Error BookInactive =>
             Error.Validation("Book.Inactive", "Book is deactivated.");
+
+        public static Error InvalidCategory =>
+            Error.Validation("Book.InvalidCategory", "Category is invalid.");
     }
 }

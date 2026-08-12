@@ -24,8 +24,10 @@ public record ResetPasswordRequest(
     string Token,
     string NewPassword);
 
+// CurrentPassword is nullable: Google-created accounts have no usable password and set
+// one without proving a current password (the server skips verification for them).
 public record ChangePasswordRequest(
-    string CurrentPassword,
+    string? CurrentPassword,
     string NewPassword);
 
 public record AuthenticationResponse(

@@ -14,6 +14,7 @@ public sealed record AdminBookResult(
 public sealed record BookFormSubmit(
     string Title,
     string Author,
+    string Category,
     string Description,
     IBrowserFile? CoverFile,
     IBrowserFile? BookFile);

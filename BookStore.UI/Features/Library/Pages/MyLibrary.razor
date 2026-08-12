@@ -8,13 +8,6 @@
     <p class="library-subtitle">کتاب‌هایی که ذخیره کرده‌اید</p>
 </div>
 
-@if (_notice is not null)
-{
-    <div class="library-notice @(_notice.Value.IsError ? "library-notice-error" : "library-notice-success")" role="status">
-        @_notice.Value.Text
-    </div>
-}
-
 @if (_error)
 {
     <ErrorNotice Title="دریافت کتابخانه ناموفق بود"
@@ -36,7 +29,7 @@ else if (_books.Count == 0)
 {
     <EmptyState Title="کتابخانه‌تان هنوز خالی است"
                 Message="کتاب‌هایی را که دوست دارید به کتابخانه اضافه کنید تا این‌جا ببینیدشان."
-                Icon="📚">
+                Icon="bi bi-book">
         <Action>
             <a class="btn btn-primary" href="books">مشاهدهٔ کتاب‌ها</a>
         </Action>
@@ -49,14 +42,14 @@ else
         {
             <div class="col">
                 <div class="library-card">
-                    <BookCard Book="book" />
+                    <BookCard Book="book" InLibrary="true" />
                     <button type="button"
                             class="library-card-remove"
                             aria-label="حذف «@book.Title» از کتابخانه"
                             title="حذف از کتابخانه"
                             disabled="@(_removingId == book.Id)"
                             @onclick="() => AskRemove(book)">
-                        <span aria-hidden="true">✕</span>
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -81,12 +74,14 @@ else
     [Inject]
     private NavigationManager Nav { get; set; } = default!;
 
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
     private IReadOnlyList<BookResponse>? _books;
     private bool _error;
     private BookResponse? _pendingRemove;
     private Guid? _removingId;
     private bool _isRemoving;
-    private (string Text, bool IsError)? _notice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,6 +104,7 @@ else
                 entry.Id,
                 entry.Title,
                 entry.Author,
+                entry.Category,
                 entry.Description,
                 entry.CoverImagePath,
                 entry.FilePath,
@@ -139,7 +135,6 @@ else
 
         var book = _pendingRemove;
         _isRemoving = true;
-        _notice = null;
 
         try
         {
@@ -155,11 +150,11 @@ else
             if (result.Success)
             {
                 _books = _books?.Where(b => b.Id != book.Id).ToList();
-                _notice = ($"«{book.Title}» از کتابخانهٔ شما حذف شد.", false);
+                ToastService.ShowSuccess($"«{book.Title}» از کتابخانهٔ شما حذف شد.");
             }
             else
             {
-                _notice = (result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.", true);
+                ToastService.ShowError(result.Message ?? "حذف از کتابخانه ناموفق بود؛ دوباره تلاش کنید.");
             }
 
             _pendingRemove = null;

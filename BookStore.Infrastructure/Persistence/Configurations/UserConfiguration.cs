@@ -41,6 +41,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsActive)
             .IsRequired();
 
+        // Google-created accounts have HasPassword=false (they set a password later); the
+        // column default must be TRUE so pre-existing password-registered rows stay as-is.
+        builder.Property(u => u.HasPassword)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         builder.Metadata.FindNavigation(nameof(User.RefreshTokens))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 

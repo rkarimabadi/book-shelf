@@ -1,6 +1,9 @@
 @if (_errorMessage is not null)
 {
-    <div class="admin-form-error" role="alert">@_errorMessage</div>
+    <div class="admin-form-error" role="alert">
+        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+        <span>@_errorMessage</span>
+    </div>
 }
 
 <div class="book-form-card">
@@ -45,6 +48,21 @@
         </div>
 
         <div class="book-field">
+            <label for="bookCategory">دسته‌بندی</label>
+            <select id="bookCategory" class="book-input" @bind="Category">
+                <option value="">انتخاب کنید</option>
+                @foreach (var category in _categories)
+                {
+                    <option value="@category">@category</option>
+                }
+            </select>
+            @if (FieldErrors.TryGetValue("Category", out var categoryError))
+            {
+                <span class="book-field-error">@categoryError</span>
+            }
+        </div>
+
+        <div class="book-field">
             <label for="bookDescription">توضیحات</label>
             <textarea id="bookDescription"
                       class="book-input book-textarea"
@@ -73,7 +91,7 @@
                 else
                 {
                     <span class="book-upload-placeholder">
-                        <span class="book-upload-icon" aria-hidden="true">🖼️</span>
+                        <i class="bi bi-image book-upload-icon" aria-hidden="true"></i>
                         <span>برای انتخاب کلیک کنید</span>
                     </span>
                 }
@@ -97,21 +115,21 @@
                 @if (_bookFileName is not null)
                 {
                     <span class="book-file-selected">
-                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <i class="bi bi-journal-richtext book-upload-icon" aria-hidden="true"></i>
                         <span>@_bookFileName</span>
                     </span>
                 }
                 else if (Existing is not null && !string.IsNullOrWhiteSpace(Existing.FilePath))
                 {
                     <span class="book-file-selected">
-                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <i class="bi bi-journal-richtext book-upload-icon" aria-hidden="true"></i>
                         <span>@Path.GetFileName(Existing.FilePath)</span>
                     </span>
                 }
                 else
                 {
                     <span class="book-upload-placeholder">
-                        <span class="book-upload-icon" aria-hidden="true">📄</span>
+                        <i class="bi bi-journal-richtext book-upload-icon" aria-hidden="true"></i>
                         <span>برای انتخاب کلیک کنید</span>
                     </span>
                 }
@@ -125,14 +143,21 @@
     </div>
 
     <div class="book-form-actions">
-        <button type="button" class="book-btn book-btn-ghost" disabled="@IsBusy" @onclick="OnCancel">انصراف</button>
+        <button type="button" class="book-btn book-btn-ghost" disabled="@IsBusy" @onclick="OnCancel">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+            انصراف
+        </button>
         <button type="button" class="book-btn book-btn-primary" disabled="@IsBusy" @onclick="Submit">
+            <i class="bi bi-check-lg" aria-hidden="true"></i>
             @(IsBusy ? "در حال ذخیره..." : (Existing is null ? "ثبت کتاب" : "ذخیرهٔ تغییرات"))
         </button>
     </div>
 </div>
 
 @code {
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
     // Null in create mode; set in edit mode to prefill + keep existing files.
     [Parameter]
     public BookResponse? Existing { get; set; }
@@ -151,7 +176,9 @@
 
     private string Title = string.Empty;
     private string Author = string.Empty;
+    private string Category = string.Empty;
     private string Description = string.Empty;
+    private List<string> _categories = new();
 
     private IBrowserFile? _coverFile;
     private string? _coverPreviewUrl;
@@ -160,6 +187,22 @@
     private Guid? _prefilledForId;
     private string? _errorMessage;
     private Dictionary<string, string> FieldErrors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var categories = await BookService.GetCategoriesAsync();
+        _categories = categories?.ToList() ?? [];
+
+        // If the categories fetch failed (API blip), fall back to a static list so the admin can
+        // still create/edit a book — the server validates against the same canonical set anyway.
+        if (_categories.Count == 0)
+        {
+            _categories = new List<string>
+            {
+                "رمان", "علمی", "تاریخی", "فلسفه", "شعر و ادبیات", "کودک و نوجوان", "مذهبی", "متفرقه"
+            };
+        }
+    }
 
     protected override void OnParametersSet()
     {
@@ -171,6 +214,7 @@
             _prefilledForId = targetId;
             Title = Existing?.Title ?? string.Empty;
             Author = Existing?.Author ?? string.Empty;
+            Category = Existing?.Category ?? string.Empty;
             Description = Existing?.Description ?? string.Empty;
             _coverFile = null;
             _coverPreviewUrl = null;
@@ -250,6 +294,11 @@
             FieldErrors["Author"] = "نویسنده را وارد کنید.";
         }
 
+        if (string.IsNullOrWhiteSpace(Category))
+        {
+            FieldErrors["Category"] = "دسته‌بندی را انتخاب کنید.";
+        }
+
         if (Existing is null && _bookFile is null)
         {
             FieldErrors["File"] = "فایل کتاب (EPUB) الزامی است.";
@@ -263,6 +312,7 @@
         await OnSubmit.InvokeAsync(new BookFormSubmit(
             Title.Trim(),
             Author.Trim(),
+            Category,
             Description?.Trim() ?? string.Empty,
             _coverFile,
             _bookFile));

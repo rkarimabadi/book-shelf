@@ -71,6 +71,22 @@ public sealed class AdminUserService : IAdminUserService
         }
     }
 
+    public async Task<AdminUserResult> ResetUserPasswordAsync(Guid id, string newPassword, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.PatchAsJsonAsync(
+                $"api/users/{id}/password",
+                new ResetUserPasswordRequest(newPassword),
+                cancellationToken);
+            return await ToResultAsync(response);
+        }
+        catch
+        {
+            return new AdminUserResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
     private static async Task<AdminUserResult> ToResultAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
@@ -105,12 +121,41 @@ public sealed class AdminUserService : IAdminUserService
         }
     }
 
-    private static string MapPersian(string message) => message switch
+    // The server surfaces business errors as title = English description, detail = error code, so
+    // match on either form (descriptions are prefix/contains-matched because they embed dynamic ids).
+    private static string MapPersian(string message)
     {
-        "User.NotFound" => "کاربر پیدا نشد.",
-        "User.CannotModifySelf" => "شما نمی‌توانید حساب خودتان را تغییر دهید.",
-        "User.RoleAlreadySet" => "نقش کاربر از قبل همان است.",
-        "Role is invalid." => "نقش معتبر نیست.",
-        _ => message
-    };
+        if (message == "User.NotFound" || message.StartsWith("User with id", StringComparison.Ordinal))
+        {
+            return "کاربر پیدا نشد.";
+        }
+
+        if (message == "User.CannotModifySelf" || message.Contains("own account", StringComparison.OrdinalIgnoreCase))
+        {
+            return "شما نمی‌توانید حساب خودتان را تغییر دهید.";
+        }
+
+        if (message == "User.RoleAlreadySet" || message.Contains("already has the", StringComparison.OrdinalIgnoreCase))
+        {
+            return "نقش کاربر از قبل همان است.";
+        }
+
+        if (message == "User.Inactive" || message.Contains("is inactive", StringComparison.OrdinalIgnoreCase))
+        {
+            return "حساب کاربر غیرفعال است؛ ابتدا آن را فعال کنید.";
+        }
+
+        if (message == "Role is invalid.")
+        {
+            return "نقش معتبر نیست.";
+        }
+
+        // Defensive: the dialog validates ≥ 8 chars client-side, but the server can still return this.
+        if (message == "Password must be at least 8 characters long.")
+        {
+            return "رمز عبور باید حداقل ۸ کاراکتر باشد.";
+        }
+
+        return message;
+    }
 }

@@ -1,12 +1,22 @@
 @page "/register"
 @inject IAuthenticationService AuthService
 @inject NavigationManager Nav
+@inject ToastService ToastService
 
 <PageTitle>ثبت‌نام</PageTitle>
 
 <div class="auth-card">
     <h1 class="auth-title">ثبت‌نام</h1>
     <p class="auth-subtitle">یک حساب جدید بسازید</p>
+
+    @if (GoogleEnabled)
+    {
+        <a class="google-button" href="@GoogleLoginUrl">
+            <i class="bi bi-google" aria-hidden="true"></i>
+            ثبت‌نام با گوگل
+        </a>
+        <div class="auth-divider" role="separator"><span>یا</span></div>
+    }
 
     <form @onsubmit="HandleRegister" novalidate>
         <div class="auth-field">
@@ -45,12 +55,8 @@
             }
         </div>
 
-        @if (ErrorMessage is not null)
-        {
-            <div class="auth-error" role="alert">@ErrorMessage</div>
-        }
-
         <button type="submit" class="auth-button" disabled="@IsBusy">
+            <i class="bi @(IsBusy ? "bi-arrow-repeat bi-spin" : "bi-person-plus")" aria-hidden="true"></i>
             @(IsBusy ? "در حال ثبت‌نام..." : "ثبت‌نام")
         </button>
     </form>
@@ -69,12 +75,19 @@
     private string Email = string.Empty;
     private string Password = string.Empty;
     private bool IsBusy;
-    private string? ErrorMessage;
+    private bool GoogleEnabled;
     private Dictionary<string, string> FieldErrors = new();
+
+    private string GoogleLoginUrl =>
+        $"/api/auth/google-login?returnUrl={Uri.EscapeDataString(ReturnUrl is { } url && url.StartsWith('/') ? url : "/")}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        GoogleEnabled = await AuthService.IsGoogleEnabledAsync();
+    }
 
     private async Task HandleRegister()
     {
-        ErrorMessage = null;
         FieldErrors = new();
 
         if (string.IsNullOrWhiteSpace(FirstName))
@@ -113,12 +126,14 @@
         IsBusy = true;
         try
         {
-            await AuthService.RegisterAsync(new RegisterRequest(Email.Trim(), Password, FirstName.Trim(), LastName.Trim()));
+            var result = await AuthService.RegisterAsync(new RegisterRequest(Email.Trim(), Password, FirstName.Trim(), LastName.Trim()));
+            var name = string.IsNullOrWhiteSpace(result.FirstName) ? string.Empty : $"، {result.FirstName}";
+            ToastService.ShowSuccess($"ثبت‌نام با موفقیت انجام شد. خوش آمدید{name}!");
             Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ToastService.ShowError(ex.Message);
         }
         finally
         {

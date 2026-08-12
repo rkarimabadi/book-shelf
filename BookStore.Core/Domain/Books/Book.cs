@@ -8,6 +8,7 @@ public class Book : AggregateRoot
 {
     public string Title { get; private set; } = string.Empty;
     public string Author { get; private set; } = string.Empty;
+    public string Category { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public string CoverImagePath { get; private set; } = string.Empty;
     public string FilePath { get; private set; } = string.Empty;
@@ -20,6 +21,7 @@ public class Book : AggregateRoot
     public static ErrorOr<Book> Create(
         string title,
         string author,
+        string category,
         string description,
         string coverImagePath,
         string filePath)
@@ -28,6 +30,7 @@ public class Book : AggregateRoot
 
         Guard.Against.NullOrEmpty(title, nameof(title));
         Guard.Against.NullOrEmpty(author, nameof(author));
+        Guard.Against.NullOrEmpty(category, nameof(category));
         Guard.Against.NullOrEmpty(filePath, nameof(filePath));
 
         if (title.Length > 200)
@@ -40,6 +43,11 @@ public class Book : AggregateRoot
             errors.Add(Error.Validation("Book.AuthorTooLong", "Author must not exceed 100 characters."));
         }
 
+        if (!BookCategories.IsValid(category))
+        {
+            errors.Add(BookErrors.Validation.InvalidCategory);
+        }
+
         if (errors.Any())
         {
             return errors;
@@ -49,6 +57,7 @@ public class Book : AggregateRoot
         {
             Title = title,
             Author = author,
+            Category = category,
             Description = description ?? string.Empty,
             CoverImagePath = coverImagePath ?? string.Empty,
             FilePath = filePath
@@ -62,18 +71,26 @@ public class Book : AggregateRoot
     public ErrorOr<Success> UpdateDetails(
         string title,
         string author,
+        string category,
         string description,
         string? coverImagePath,
         string? filePath)
     {
         Guard.Against.NullOrEmpty(title, nameof(title));
         Guard.Against.NullOrEmpty(author, nameof(author));
+        Guard.Against.NullOrEmpty(category, nameof(category));
+
+        if (!BookCategories.IsValid(category))
+        {
+            return BookErrors.Validation.InvalidCategory;
+        }
 
         var oldTitle = Title;
         var oldAuthor = Author;
 
         Title = title;
         Author = author;
+        Category = category;
         Description = description ?? string.Empty;
 
         if (!string.IsNullOrWhiteSpace(coverImagePath))

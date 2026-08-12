@@ -8,8 +8,12 @@
                 <p id="confirm-message" class="confirm-message">@Message</p>
             }
             <div class="confirm-actions">
-                <button type="button" class="confirm-btn confirm-cancel" disabled="@IsBusy" @onclick="OnCancel">@CancelText</button>
+                <button type="button" class="confirm-btn confirm-cancel" disabled="@IsBusy" @onclick="OnCancel">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    @CancelText
+                </button>
                 <button type="button" class="confirm-btn confirm-danger" disabled="@IsBusy" @onclick="OnConfirm">
+                    <i class="bi @(IsBusy ? "bi-arrow-repeat bi-spin" : "bi-trash3")" aria-hidden="true"></i>
                     @(IsBusy ? BusyText : ConfirmText)
                 </button>
             </div>
