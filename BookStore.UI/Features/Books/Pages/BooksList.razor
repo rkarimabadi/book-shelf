@@ -10,11 +10,11 @@
         {
             @if (_totalPages > 1)
             {
-                <text>نمایش @RangeStart تا @RangeEnd از @_totalCount کتاب@FilterSuffix</text>
+                <text>نمایش @RangeStart تا @RangeEnd از @_totalCount کتاب@(FilterSuffix)</text>
             }
             else
             {
-                <text>مجموعهٔ @_totalCount کتاب@FilterSuffix</text>
+                <text>مجموعهٔ @_totalCount کتاب@(FilterSuffix)</text>
             }
         }
         else
