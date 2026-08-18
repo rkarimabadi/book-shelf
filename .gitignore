@@ -26,6 +26,8 @@ appsettings.Production.json
 .idea/
 /book/.obsidian/workspace.json
 /.obsidian/workspace.json
+# Deploy artifacts (publish.zip bundles appsettings.Production.json — production secrets)
 /publish
+/publish.zip
 /BookStore.Api/wwwroot/uploads
 /BookStore-publish.zip
