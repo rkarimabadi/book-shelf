@@ -11,6 +11,7 @@ using BookStore.Contracts.Books;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp;
 
 namespace BookStore.Api.Controllers;
 
@@ -19,12 +20,14 @@ public sealed class BooksController : ApiController
 {
     private readonly ISender _sender;
     private readonly IFileStorage _fileStorage;
+    private readonly ICoverThumbnailGenerator _coverThumbnailGenerator;
     private readonly IWebHostEnvironment _env;
 
-    public BooksController(ISender sender, IFileStorage fileStorage, IWebHostEnvironment env)
+    public BooksController(ISender sender, IFileStorage fileStorage, ICoverThumbnailGenerator coverThumbnailGenerator, IWebHostEnvironment env)
     {
         _sender = sender;
         _fileStorage = fileStorage;
+        _coverThumbnailGenerator = coverThumbnailGenerator;
         _env = env;
     }
 
@@ -34,6 +37,33 @@ public sealed class BooksController : ApiController
         var result = await _sender.Send(new GetBookCategoriesQuery(), cancellationToken);
 
         return result.Match(Ok, Problem);
+    }
+
+    /// <summary>
+    /// Serves a resized webp thumbnail of a cover image (generated once, cached on disk).
+    /// Covers are re-uploaded under fresh filenames, so the response is immutable.
+    /// </summary>
+    [HttpGet("covers/{fileName}")]
+    [ResponseCache(Duration = 31536000, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> GetCoverThumbnail(string fileName, [FromQuery] int w = 256, CancellationToken cancellationToken = default)
+    {
+        var width = Math.Clamp(w, 32, 1024);
+        var safeName = Path.GetFileName(fileName);
+        var relativePath = $"uploads/covers/{safeName}";
+
+        try
+        {
+            var thumbPath = await _coverThumbnailGenerator.GetOrCreateThumbnailAsync(relativePath, width, cancellationToken);
+            return PhysicalFile(Path.GetFullPath(thumbPath, _env.ContentRootPath), "image/webp");
+        }
+        catch (FileNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnknownImageFormatException)
+        {
+            return Problem(statusCode: StatusCodes.Status500InternalServerError, title: "Cover image could not be processed.");
+        }
     }
 
     [HttpGet]

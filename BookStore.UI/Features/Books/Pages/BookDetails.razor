@@ -2,6 +2,11 @@
 
 <PageTitle>@(_book?.Title ?? "کتاب")</PageTitle>
 
+<a class="details-back" href="@BackUrl">
+    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+    @BackLabel
+</a>
+
 @if (_error)
 {
     <ErrorNotice Title="کتاب پیدا نشد"
@@ -157,6 +162,20 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
+    // Carried by the card links: the list's search/category/page condition (to restore it on
+    // "back") and an optional "from=library" marker (to point "back" at the user's library).
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? Search { get; set; }
+
+    [SupplyParameterFromQuery(Name = "category")]
+    public string? Category { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public string? Page { get; set; }
+
+    [SupplyParameterFromQuery(Name = "from")]
+    public string? From { get; set; }
+
     [Inject]
     private IBookService BookService { get; set; } = default!;
 
@@ -268,7 +287,37 @@ else
 
     private Task OnAddClick() => AddToLibraryAsync(fromPending: false);
 
-    private string ShareUrl => Nav.Uri;
+    private bool CameFromLibrary => string.Equals(From, "library", StringComparison.OrdinalIgnoreCase);
+
+    private string BackLabel => CameFromLibrary ? "بازگشت به کتابخانهٔ من" : "بازگشت به فهرست کتاب‌ها";
+
+    private string BackUrl => CameFromLibrary ? "/library" : BooksListUrl;
+
+    // Rebuilds the list URL from the query params the card link carried, restoring the exact
+    // search/category/page condition the user had before opening the book.
+    private string BooksListUrl
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                parts.Add("search=" + Uri.EscapeDataString(Search));
+            }
+            if (!string.IsNullOrWhiteSpace(Category))
+            {
+                parts.Add("category=" + Uri.EscapeDataString(Category));
+            }
+            if (int.TryParse(Page, out var page) && page > 1)
+            {
+                parts.Add("page=" + page);
+            }
+            return "/books" + (parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts));
+        }
+    }
+
+    // The copy/share link stays clean — without the carried query params.
+    private string ShareUrl => new Uri(Nav.Uri).GetLeftPart(UriPartial.Path);
 
     private async Task CopyLinkAsync()
     {

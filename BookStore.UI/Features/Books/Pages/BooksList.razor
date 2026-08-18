@@ -97,7 +97,7 @@ else
         @foreach (var book in _books)
         {
             <div class="col">
-                <BookCard Book="book" ShowEpubBadge="true" />
+                <BookCard Book="book" ShowEpubBadge="true" DetailQuery="@DetailQuery" />
             </div>
         }
     </div>
@@ -117,7 +117,19 @@ else
     private IBookService BookService { get; set; } = default!;
 
     [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    [Inject]
     private IJSRuntime JS { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? Search { get; set; }
+
+    [SupplyParameterFromQuery(Name = "category")]
+    public string? Category { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public string? Page { get; set; }
 
     private IReadOnlyList<BookResponse>? _books;
     private bool _error;
@@ -128,6 +140,7 @@ else
     private IReadOnlyList<string>? _categories;
     private string _search = string.Empty;
     private CancellationTokenSource? _searchCts;
+    private bool _paramsApplied;
 
     private int RangeStart => _totalCount == 0 ? 0 : (_page - 1) * PageSize + 1;
 
@@ -150,9 +163,66 @@ else
         }
     }
 
+    // Query string carrying the current list condition; appended to detail-card links so the
+    // details page can offer a "back" link that restores this exact state.
+    private string DetailQuery
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                parts.Add("search=" + Uri.EscapeDataString(_search));
+            }
+            if (_category is not null)
+            {
+                parts.Add("category=" + Uri.EscapeDataString(_category));
+            }
+            if (_page > 1)
+            {
+                parts.Add("page=" + _page);
+            }
+            return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
+        }
+    }
+
+    // Keeps the URL in sync with the list state so browser-back and the header nav restore it too.
+    private void SyncUrl()
+    {
+        var target = "/books" + DetailQuery;
+        if (new Uri(Nav.Uri).PathAndQuery == target)
+        {
+            return;
+        }
+        Nav.NavigateTo(target, replace: true);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _categories = await BookService.GetCategoriesAsync();
+    }
+
+    // Restores search/category/page from the URL (written by SyncUrl / detail links) so the
+    // "back to the list" flow lands on the exact condition the user left.
+    protected override async Task OnParametersSetAsync()
+    {
+        var search = Search ?? string.Empty;
+        var category = string.IsNullOrWhiteSpace(Category) ? null : Category;
+        if (category is not null && _categories is { Count: > 0 } && !_categories.Contains(category))
+        {
+            category = null;
+        }
+        var page = int.TryParse(Page, out var p) && p > 1 ? p : 1;
+
+        if (_paramsApplied && search == _search && category == _category && page == _page)
+        {
+            return;
+        }
+
+        _paramsApplied = true;
+        _search = search;
+        _category = category;
+        _page = page;
         await LoadAsync();
     }
 
@@ -211,6 +281,7 @@ else
         }
 
         _books = result.Items;
+        SyncUrl();
     }
 
     private async Task SelectCategoryAsync(string? category)

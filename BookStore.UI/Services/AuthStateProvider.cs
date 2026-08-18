@@ -62,15 +62,22 @@ public class AuthStateProvider : AuthenticationStateProvider
     }
 
     /// <summary>
-    /// Persists a token pair WITHOUT notifying the auth state. Used by the Google OAuth
-    /// bounce page, which immediately full-reloads to the target route: raising a
-    /// notification there makes AuthorizeRouteView re-create the page (double navigation),
-    /// while a fresh boot reads the tokens and builds the authenticated shell reliably.
+    /// Persists a token pair and raises the auth-state notification, rebuilding the session
+    /// from the stored tokens. Used by the Google OAuth bounce page: the state update is
+    /// raised BEFORE the SPA navigation so the target route renders already authenticated —
+    /// no full reload, no stale header. (The former full-reload workaround existed because
+    /// raising the notification while the router's INITIAL navigation was still in flight
+    /// lost the cascading auth-state update; the bounce page now waits for that navigation
+    /// to settle before calling this.)
     /// </summary>
-    public async Task StoreTokensAsync(string accessToken, string refreshToken)
+    public async Task SignInWithTokensAsync(string accessToken, string refreshToken)
     {
         await _js.InvokeVoidAsync("localStorage.setItem", TokenStorageKey, accessToken);
         await _js.InvokeVoidAsync("localStorage.setItem", RefreshTokenStorageKey, refreshToken);
+
+        // Identical notification path to SignInAsync (the proven login-page flow):
+        // invalidate the cache and notify with a fresh provider query.
+        NotifyStateChanged();
     }
 
     public async Task SignOutAsync()

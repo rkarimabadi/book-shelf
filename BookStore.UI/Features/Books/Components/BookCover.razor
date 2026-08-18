@@ -7,7 +7,7 @@
 else
 {
 <img class="cover-image"
-          src="@IBookService.MediaUrl(Path)"
+          src="@(Thumbnail ? IBookService.CoverThumbnailUrl(Path) : IBookService.MediaUrl(Path))"
           alt="@Alt"
           loading="@(Eager ? "eager" : "lazy")"
           @onerror="HandleImageError" />
@@ -22,6 +22,10 @@ else
 
     [Parameter]
     public bool Eager { get; set; }
+
+    /// <summary>When true, requests the server-resized webp thumbnail instead of the full-size cover.</summary>
+    [Parameter]
+    public bool Thumbnail { get; set; }
 
     [Inject]
     private IBookService BookService { get; set; } = default!;

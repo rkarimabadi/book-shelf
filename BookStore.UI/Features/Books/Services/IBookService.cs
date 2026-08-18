@@ -46,4 +46,11 @@ public interface IBookService
     /// <summary>Builds a root-relative URL for an uploaded file path (e.g. "uploads/covers/x.jpg").</summary>
     static string MediaUrl(string? path) =>
         string.IsNullOrWhiteSpace(path) ? string.Empty : $"/{path.TrimStart('/')}";
+
+    /// <summary>Builds the server-resized webp thumbnail URL for a cover path (used on list cards; the
+    /// full-size image is only shown on the book details page).</summary>
+    static string CoverThumbnailUrl(string? path, int width = 256) =>
+        string.IsNullOrWhiteSpace(path)
+            ? string.Empty
+            : $"/api/books/covers/{Uri.EscapeDataString(Path.GetFileName(path.TrimEnd('/')))}?w={width}";
 }

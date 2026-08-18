@@ -158,37 +158,45 @@ a, .btn-link {
     content: "An error has occurred."
 }
 
-.loading-progress {
-    position: relative;
-    display: block;
-    width: 8rem;
-    height: 8rem;
-    margin: 20vh auto 1rem auto;
+.app-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding-block: 22vh var(--space-6);
 }
 
-.loading-progress circle {
-    fill: none;
-    stroke: #e0e0e0;
-    stroke-width: 0.6rem;
-    transform-origin: 50% 50%;
-    transform: rotate(-90deg);
+.app-loading-brand {
+    font-size: var(--text-headline);
+    font-weight: 700;
 }
 
-.loading-progress circle:last-child {
-    stroke: var(--color-blue);
-    stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-    transition: stroke-dasharray 0.05s ease-in-out;
+.app-loading-spinner {
+    /* Same visual as the shared LoadingSpinner component (spinner + text styling). */
+    width: 2rem;
+    height: 2rem;
+    border: 0.25rem solid var(--fill);
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: app-loading-spin 0.8s linear infinite;
 }
 
-.loading-progress-text {
-    position: absolute;
-    text-align: center;
-    font-weight: bold;
-    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+@keyframes app-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-.loading-progress-text:after {
-    content: var(--blazor-load-percentage-text, "Loading");
+@media (prefers-reduced-motion: reduce) {
+    .app-loading-spinner {
+        animation: none;
+    }
+}
+
+.app-loading-note {
+    margin: 0;
+    font-size: var(--text-subhead);
+    color: var(--label-secondary);
 }
 
 code {

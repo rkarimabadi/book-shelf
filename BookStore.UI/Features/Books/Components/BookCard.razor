@@ -10,9 +10,9 @@
 }
 else
 {
-    <NavLink class="book-card" href="@($"/books/{Book.Id}")">
+    <NavLink class="book-card" href="@($"/books/{Book.Id}{DetailQuery}")">
         <div class="details-cover book-card-cover">
-            <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" />
+            <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" Thumbnail="true" />
             @if (ShowEpubBadge)
             {
                 <span class="book-card-badge badge-epub" title="فایل EPUB">
@@ -56,4 +56,9 @@ else
     // Shows a bookmark badge on the cover corner (user's library).
     [Parameter]
     public bool InLibrary { get; set; }
+
+    // Optional query string appended to the detail link (the list's current filters, or a
+    // "?from=library" marker) so the details page can offer a context-aware back link.
+    [Parameter]
+    public string? DetailQuery { get; set; }
 }

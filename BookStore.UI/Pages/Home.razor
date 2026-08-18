@@ -1,10 +1,10 @@
 @page "/"
 
-<PageTitle>خانه کتاب</PageTitle>
+<PageTitle>نون گرد</PageTitle>
 
 <section class="hero">
     <span class="hero-badge">کتاب‌خانهٔ آنلاین</span>
-    <h1 class="hero-title">به خانه کتاب خوش آمدید</h1>
+    <h1 class="hero-title">به نون گرد خوش آمدید</h1>
     <p class="hero-subtitle">
         مجموعه‌ای از کتاب‌های برگزیده را مرور کنید، به کتابخانهٔ شخصی‌تان اضافه کنید
         و هر جا که هستید از آن‌ها لذت ببرید.
@@ -14,3 +14,92 @@
         <i class="bi bi-arrow-left" aria-hidden="true"></i>
     </a>
 </section>
+
+<section class="value" aria-labelledby="value-title">
+    <h2 class="value-title" id="value-title">چرا نون گرد؟</h2>
+    <p class="value-intro">
+        همهٔ کتاب‌های این کتابخانه، ترجمهٔ فارسی کتاب‌های حاضر در فهرست پرفروش‌های نیویورک تایمز هستند؛
+        پس کیفیت و محبوبیت هر کتاب پیش از ترجمه اثبات شده است.
+    </p>
+    <div class="value-cards">
+        <div class="value-card">
+            <div class="value-card-icon value-card-icon-nyt" aria-hidden="true">
+                <i class="bi bi-trophy"></i>
+            </div>
+            <h3>پرفروش‌های نیویورک تایمز</h3>
+            <p>کتاب‌ها از فهرست پرفروش‌های نیویورک تایمز انتخاب می‌شوند؛ اثری که می‌خوانید از محبوب‌ترین کتاب‌های روز جهان است.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-card-icon value-card-icon-ai" aria-hidden="true">
+                <i class="bi bi-magic"></i>
+            </div>
+            <h3>ترجمهٔ هوش مصنوعی</h3>
+            <p>نسخهٔ فارسی کتاب‌ها با ترجمهٔ هوش مصنوعی آماده می‌شود؛ به‌جای ماه‌ها انتظار، خیلی زود به کتاب تازه‌تر دسترسی پیدا می‌کنید.</p>
+        </div>
+    </div>
+    <div class="value-paths">
+        <div class="value-path">
+            <i class="bi bi-lightning-charge-fill value-path-icon value-path-icon-now" aria-hidden="true"></i>
+            <div>
+                <h3>همین حالا بخوانید</h3>
+                <p>کتاب‌هایی که نسخهٔ فارسی‌شان آماده است، همین الان در دسترس‌اند.</p>
+            </div>
+        </div>
+        <div class="value-path">
+            <i class="bi bi-hourglass-split value-path-icon value-path-icon-soon" aria-hidden="true"></i>
+            <div>
+                <h3>یا با کمی انتظار</h3>
+                <p>برای کتاب‌های تازه درخواست ترجمه بدهید تا در اولویت قرار بگیرند.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@if (_freshBooks is { Count: > 0 })
+{
+    <section class="fresh" aria-labelledby="fresh-title">
+        <div class="fresh-head">
+            <h2 class="fresh-title" id="fresh-title">تازه‌های کتابخانه</h2>
+            <a class="fresh-all" href="books">
+                مشاهدهٔ همهٔ کتاب‌ها
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            </a>
+        </div>
+        <div class="fresh-track">
+            @foreach (var book in _freshBooks)
+            {
+                <a class="fresh-item" href="@($"/books/{book.Id}")" title="@book.Title">
+                    <span class="fresh-cover">
+                        <BookCover Path="@book.CoverImagePath" Alt="@book.Title" Thumbnail="true" />
+                    </span>
+                    <span class="fresh-item-title">@book.Title</span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<section class="home-cta" aria-labelledby="home-cta-title">
+    <h2 class="home-cta-title" id="home-cta-title">همین حالا شروع کنید</h2>
+    <p class="home-cta-subtitle">
+        فهرست کامل کتاب‌های ترجمه‌شده را مرور کنید و کتاب بعدی‌تان را انتخاب کنید.
+    </p>
+    <a class="home-cta-button" href="books">
+        مشاهدهٔ همهٔ کتاب‌ها
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+    </a>
+</section>
+
+@code {
+    [Inject]
+    private IBookService BookService { get; set; } = default!;
+
+    private IReadOnlyList<BookResponse>? _freshBooks;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Graceful: the shelf simply doesn't render when the fetch fails or the catalog is empty.
+        var result = await BookService.GetBooksAsync(1, 4, null, null);
+        _freshBooks = result?.Items;
+    }
+}

@@ -23,8 +23,9 @@
     public string? Error { get; set; }
 
     private bool _handled;
+    private bool _valid;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         if (_handled)
         {
@@ -46,14 +47,27 @@
             return;
         }
 
-        // The server already exchanged the Google identity for our own JWT pair; the token
-        // carries the user's claims (name/email/role). Persist the pair, then FULL-RELOAD
-        // to the target route: a fresh boot reads the tokens and builds the authenticated
-        // shell reliably, whereas SPA navigation after NotifyAuthenticationStateChanged on
-        // this page leaves the layout stale (AuthorizeRouteView re-creates the page and the
-        // double navigation races). The welcome feedback is the logged-in header itself.
-        await AuthState.StoreTokensAsync(AccessToken, RefreshToken);
+        _valid = true;
+    }
 
-        Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/", forceLoad: true);
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !_valid)
+        {
+            return;
+        }
+
+        // The server already exchanged the Google identity for our own JWT pair; the token
+        // carries the user's claims (name/email/role). Sign in (persist + raise the auth-state
+        // notification) and SPA-navigate — NOT a full reload, so the WASM app is never re-booted.
+        // The delay lets the router's INITIAL navigation fully settle: raising the notification
+        // while it is still in flight loses the cascading auth-state update (the layout keeps
+        // the anonymous header — the very failure the old full reload worked around), whereas
+        // after it settles the notification propagates exactly like the login-page flow.
+        await Task.Delay(100);
+
+        await AuthState.SignInWithTokensAsync(AccessToken!, RefreshToken!);
+
+        Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
     }
 }

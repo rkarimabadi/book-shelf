@@ -6,7 +6,8 @@
 
 <header class="app-header">
     <a class="app-brand" href="">
-        <img class="app-logo" src="/images/app/header-logo.png" alt="خانه کتاب" />
+        <img class="app-logo" src="/images/app/header-logo.png" alt="نون گرد" />
+        <span class="app-brand-name">نون گرد</span>
     </a>
 
     <div class="app-menu">
@@ -50,6 +51,9 @@
                         {
                             <div class="user-menu-overlay" @onclick="CloseUserMenu"></div>
                             <div class="user-dropdown" role="menu" aria-label="حساب کاربری">
+                                <div class="user-dropdown-head" aria-hidden="true">
+                                    <span class="user-dropdown-name">@(auth.User.Identity?.Name ?? "کاربر")</span>
+                                </div>
                                 <NavLink href="change-password" role="menuitem" @onclick="CloseUserMenu">
                                     <i class="bi bi-shield-lock" aria-hidden="true"></i>
                                     تغییر رمز

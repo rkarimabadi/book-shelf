@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddOptions<LocalFileStorageOptions>()
             .Bind(configuration.GetSection(LocalFileStorageOptions.SectionName));
         services.AddScoped<IFileStorage, LocalFileStorage>();
+        services.AddScoped<ICoverThumbnailGenerator, CoverThumbnailGenerator>();
 
         services.AddOptions<SmtpSettings>()
             .Bind(configuration.GetSection(SmtpSettings.SectionName));

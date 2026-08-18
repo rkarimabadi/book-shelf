@@ -3,9 +3,15 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>خانه کتاب</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>نون گرد</title>
     <base href="/" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="نون گرد" />
     <!-- Peyda Regular is the workhorse weight (all body text); preload it so the font is
          fetched in parallel with CSS/JS and is ready before first render (no swap flash).
          crossorigin is required for font preloads, even same-origin. -->
@@ -23,11 +29,11 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="app-loading" role="status">
+            <span class="app-loading-brand">نون گرد</span>
+            <span class="app-loading-spinner" aria-hidden="true"></span>
+            <p class="app-loading-note">لطفاً چند لحظه صبر کنید…</p>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -96,6 +102,12 @@
                 return Promise.resolve(false);
             }
         };
+    </script>
+    <script>
+        // Service worker: PWA installability + app-shell caching (see sw.js).
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
     </script>
 </body>
 
