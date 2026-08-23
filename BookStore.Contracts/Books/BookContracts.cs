@@ -22,7 +22,9 @@ public record BookResponse(
     string FilePath,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    bool IsActive);
+    bool IsActive,
+    double? AverageRating = null,
+    int RatingsCount = 0);
 
 public record UpdateBookStatusRequest(
     bool IsActive);
@@ -39,3 +41,12 @@ public record BookNoteResponse(
 
 public record SaveBookNoteRequest(
     string Note);
+
+/// <summary>The requesting user's own rating for a book (null when they have not rated it) plus the public summary.</summary>
+public record MyBookRatingResponse(
+    double? Average,
+    int Count,
+    int? Rating);
+
+public record SaveBookRatingRequest(
+    int Rating);

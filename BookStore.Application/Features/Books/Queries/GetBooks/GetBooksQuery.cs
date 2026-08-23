@@ -11,21 +11,27 @@ public record GetBooksQuery(
     string? Category = null,
     string? Search = null) : IRequest<ErrorOr<GetBooksResult>>;
 
-/// <summary>One page of books plus paging metadata (page/pageSize are the clamped effective values).</summary>
+/// <summary>One page of books plus paging metadata (page/pageSize are the clamped effective values).
+/// Rating summaries cover every book on the page that has been rated.</summary>
 public record GetBooksResult(
     List<Book> Items,
     int TotalCount,
     int Page,
     int PageSize,
-    int TotalPages);
+    int TotalPages,
+    Dictionary<Guid, (double? Average, int Count)> RatingSummaries);
 
 public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, ErrorOr<GetBooksResult>>
 {
     private readonly IBookRepository _bookRepository;
+    private readonly ITranslationRatingRepository _ratingRepository;
 
-    public GetBooksQueryHandler(IBookRepository bookRepository)
+    public GetBooksQueryHandler(
+        IBookRepository bookRepository,
+        ITranslationRatingRepository ratingRepository)
     {
         _bookRepository = bookRepository;
+        _ratingRepository = ratingRepository;
     }
 
     public async Task<ErrorOr<GetBooksResult>> Handle(GetBooksQuery query, CancellationToken cancellationToken)
@@ -38,9 +44,10 @@ public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, ErrorOr<GetBo
 
         var (items, totalCount) = await _bookRepository.GetPageAsync(
             page, pageSize, query.IncludeInactive, query.Category, query.Search, cancellationToken);
+        var ratingSummaries = await _ratingRepository.GetAllSummariesAsync(cancellationToken);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
 
-        return new GetBooksResult(items, totalCount, page, pageSize, totalPages);
+        return new GetBooksResult(items, totalCount, page, pageSize, totalPages, ratingSummaries);
     }
 }

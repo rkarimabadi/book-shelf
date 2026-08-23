@@ -117,6 +117,65 @@ else
                 }
             </div>
 
+            <div class="details-rating">
+                <div class="details-rating-head">
+                    <i class="bi bi-translate" aria-hidden="true"></i>
+                    <span>کیفیت ترجمه</span>
+                </div>
+
+                @if (_rating is not null && _rating.Count > 0)
+                {
+                    // Whole-star display: stars up to the rounded average render filled (4.6 → 5, 4.3 → 4).
+                    var filledStars = (int)Math.Round(_rating.Average ?? 0, MidpointRounding.AwayFromZero);
+
+                    <div class="details-rating-summary">
+                        <span class="stars" aria-label="@($"{_rating.Average?.ToString("0.#")} از ۵ ستاره")">
+                            @for (var star = 1; star <= 5; star++)
+                            {
+                                <i class="bi @(star <= filledStars ? "bi-star-fill" : "bi-star")" aria-hidden="true"></i>
+                            }
+                        </span>
+                        <span class="details-rating-avg">@PersianDateFormatter.ToPersianDigits((_rating.Average ?? 0).ToString("0.#")) از ۵</span>
+                        <span class="details-rating-count">(@PersianDateFormatter.ToPersianDigits(_rating.Count.ToString()) رأی)</span>
+                    </div>
+                }
+                else
+                {
+                    <p class="details-rating-empty">هنوز کسی به کیفیت ترجمهٔ این کتاب امتیاز نداده است.</p>
+                }
+
+                @if (_isAuthenticated)
+                {
+                    <div class="details-rate-row" role="group" aria-label="امتیاز شما از ۱ تا ۵ ستاره">
+                        @for (var star = 1; star <= 5; star++)
+                        {
+                            var value = star;
+                            <button type="button"
+                                    class="details-rate-star @(value == _myRating ? "is-selected" : "") @(value <= (_hoveringStar ?? _myRating) ? "is-hovered" : "")"
+                                    aria-label="@($"{star} ستاره")"
+                                    @onclick="() => SetMyRatingAsync(value)"
+                                    @onmouseover="() => _hoveringStar = value"
+                                    @onmouseout="() => _hoveringStar = null">
+                                <i class="bi @((value <= (_hoveringStar ?? _myRating) || value == _myRating) ? "bi-star-fill" : "bi-star")" aria-hidden="true"></i>
+                            </button>
+                        }
+                    </div>
+                    @if (_isSavingRating)
+                    {
+                        <p class="details-rating-saved"><i class="bi bi-arrow-repeat bi-spin" aria-hidden="true"></i> در حال ثبت امتیاز...</p>
+                    }
+                }
+                else
+                {
+                    <div class="details-rate-anon">
+                        <button type="button" class="book-action book-action-rate" @onclick="QueueRateAndRedirectToLogin">
+                            <i class="bi bi-star" aria-hidden="true"></i>
+                            برای امتیاز دادن وارد شوید
+                        </button>
+                    </div>
+                }
+            </div>
+
             @if (_isAuthenticated)
             {
                 <div class="details-note">
@@ -205,6 +264,10 @@ else
     private bool _isSharing;
     private string _note = string.Empty;
     private bool _isSavingNote;
+    private MyBookRatingResponse? _rating;
+    private int? _myRating;
+    private int? _hoveringStar;
+    private bool _isSavingRating;
 
     protected override async Task OnInitializedAsync()
     {
@@ -227,6 +290,11 @@ else
     {
         var state = await AuthState.GetAuthenticationStateAsync();
         _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+
+        // The rating summary is public (everyone sees the average/count); an authenticated user
+        // also gets their own star so the picker reflects it.
+        _rating = await BookService.GetBookRatingAsync(Id);
+        _myRating = _rating?.Rating;
 
         if (_isAuthenticated)
         {
@@ -399,6 +467,56 @@ else
     }
 
     private void AskRemoveFromLibrary() => _showRemoveConfirm = true;
+
+    private async Task SetMyRatingAsync(int rating)
+    {
+        if (_isSavingRating)
+        {
+            return;
+        }
+
+        _hoveringStar = null;
+        _isSavingRating = true;
+
+        try
+        {
+            var result = await BookService.SaveBookRatingAsync(Id, rating);
+
+            if (result.Unauthorized)
+            {
+                var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+                Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                _myRating = rating;
+                // Refresh the public summary so the average/count reflect the new vote.
+                var refreshed = await BookService.GetBookRatingAsync(Id);
+                if (refreshed is not null)
+                {
+                    _rating = refreshed;
+                }
+
+                ToastService.ShowSuccess("امتیاز شما ثبت شد.");
+            }
+            else
+            {
+                ToastService.ShowError(result.Message ?? "ثبت امتیاز ناموفق بود؛ دوباره تلاش کنید.");
+            }
+        }
+        finally
+        {
+            _isSavingRating = false;
+        }
+    }
+
+    private void QueueRateAndRedirectToLogin()
+    {
+        var returnUrl = Uri.EscapeDataString($"/books/{Id}");
+        Nav.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
 
     private async Task ConfirmRemoveFromLibraryAsync()
     {

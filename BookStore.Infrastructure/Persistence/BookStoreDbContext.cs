@@ -21,6 +21,7 @@ public sealed class BookStoreDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Book> Books => Set<Book>();
     public DbSet<BookNote> BookNotes => Set<BookNote>();
+    public DbSet<TranslationRating> TranslationRatings => Set<TranslationRating>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

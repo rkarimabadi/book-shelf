@@ -4,18 +4,28 @@ using MediatR;
 
 namespace BookStore.Application.Features.Books.Queries.GetBook;
 
-public record GetBookQuery(Guid Id, bool IncludeInactive = false) : IRequest<ErrorOr<Book>>;
+public record GetBookQuery(Guid Id, bool IncludeInactive = false) : IRequest<ErrorOr<GetBookResult>>;
 
-public class GetBookQueryHandler : IRequestHandler<GetBookQuery, ErrorOr<Book>>
+/// <summary>The book plus its translation-quality rating summary (average/count), shown on the details page.</summary>
+public record GetBookResult(
+    Book Book,
+    double? RatingAverage,
+    int RatingCount);
+
+public class GetBookQueryHandler : IRequestHandler<GetBookQuery, ErrorOr<GetBookResult>>
 {
     private readonly IBookRepository _bookRepository;
+    private readonly ITranslationRatingRepository _ratingRepository;
 
-    public GetBookQueryHandler(IBookRepository bookRepository)
+    public GetBookQueryHandler(
+        IBookRepository bookRepository,
+        ITranslationRatingRepository ratingRepository)
     {
         _bookRepository = bookRepository;
+        _ratingRepository = ratingRepository;
     }
 
-    public async Task<ErrorOr<Book>> Handle(GetBookQuery query, CancellationToken cancellationToken)
+    public async Task<ErrorOr<GetBookResult>> Handle(GetBookQuery query, CancellationToken cancellationToken)
     {
         var book = await _bookRepository.GetByIdAsync(query.Id, cancellationToken);
         if (book is null)
@@ -30,6 +40,8 @@ public class GetBookQueryHandler : IRequestHandler<GetBookQuery, ErrorOr<Book>>
             return BookErrors.Validation.NotFound(query.Id);
         }
 
-        return book;
+        var (average, count) = await _ratingRepository.GetRatingSummaryAsync(book.Id, cancellationToken);
+
+        return new GetBookResult(book, average, count);
     }
 }

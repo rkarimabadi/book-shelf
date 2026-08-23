@@ -26,7 +26,8 @@ public static class PersianDateFormatter
             $"{Calendar.GetYear(local):0000}/{Calendar.GetMonth(local):00}/{Calendar.GetDayOfMonth(local):00}");
     }
 
-    private static string ToPersianDigits(string value)
+    /// <summary>Replaces ASCII digits with Persian-Indic digits (۰–۹); other characters pass through.</summary>
+    public static string ToPersianDigits(string value)
     {
         var chars = value.ToCharArray();
         for (var i = 0; i < chars.Length; i++)

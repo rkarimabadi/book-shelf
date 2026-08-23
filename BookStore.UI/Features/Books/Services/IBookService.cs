@@ -11,6 +11,8 @@ public sealed record DownloadResult(bool Success, byte[]? Content, string? Messa
 
 public sealed record SaveNoteResult(bool Success, string? Message, bool Unauthorized = false);
 
+public sealed record SaveRatingResult(bool Success, string? Message, bool Unauthorized = false);
+
 public interface IBookService
 {
     /// <summary>Returns one page of books (optionally filtered by category and/or title search) plus paging metadata; null when the API call failed.</summary>
@@ -42,6 +44,12 @@ public interface IBookService
 
     /// <summary>Saves the current user's private note for a book (empty clears it). Success = false + Message on failure.</summary>
     Task<SaveNoteResult> SaveBookNoteAsync(Guid bookId, string note, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns the book's rating summary plus the current user's own rating; null on API failure.</summary>
+    Task<MyBookRatingResponse?> GetBookRatingAsync(Guid bookId, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves/overwrites the current user's 1–5 star rating. Success = false + Message on failure.</summary>
+    Task<SaveRatingResult> SaveBookRatingAsync(Guid bookId, int rating, CancellationToken cancellationToken = default);
 
     /// <summary>Builds a root-relative URL for an uploaded file path (e.g. "uploads/covers/x.jpg").</summary>
     static string MediaUrl(string? path) =>

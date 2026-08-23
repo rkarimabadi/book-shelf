@@ -31,6 +31,17 @@
                     @Book.Category
                 </span>
             }
+            <span class="admin-book-rating" title="میانگین امتیاز کیفیت ترجمه از کاربران">
+                <i class="bi @(Book.RatingsCount > 0 ? "bi-star-fill" : "bi-star")" aria-hidden="true"></i>
+                @if (Book.RatingsCount > 0)
+                {
+                    <span>@PersianDateFormatter.ToPersianDigits(Book.AverageRating!.Value.ToString("0.#")) از ۵ (@(PersianDateFormatter.ToPersianDigits(Book.RatingsCount.ToString())) رأی)</span>
+                }
+                else
+                {
+                    <span>بدون امتیاز</span>
+                }
+            </span>
             <span class="admin-book-date">
                 <i class="bi bi-calendar3" aria-hidden="true"></i>
                 @PersianDateFormatter.Format(Book.CreatedAt)

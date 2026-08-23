@@ -82,17 +82,25 @@ public sealed class BooksController : ApiController
 
         return result.Match(
             paged => Ok(new PagedBooksResponse(
-                paged.Items.Select(book => new BookResponse(
-                    book.Id,
-                    book.Title,
-                    book.Author,
-                    book.Category,
-                    book.Description,
-                    book.CoverImagePath,
-                    book.FilePath,
-                    book.CreatedAt,
-                    book.UpdatedAt,
-                    book.IsActive)).ToList(),
+                paged.Items.Select(book =>
+                    {
+                        // Books with no ratings are absent from the summaries; default to null/0.
+                        paged.RatingSummaries.TryGetValue(book.Id, out var summary);
+
+                        return new BookResponse(
+                            book.Id,
+                            book.Title,
+                            book.Author,
+                            book.Category,
+                            book.Description,
+                            book.CoverImagePath,
+                            book.FilePath,
+                            book.CreatedAt,
+                            book.UpdatedAt,
+                            book.IsActive,
+                            summary.Average,
+                            summary.Count);
+                    }).ToList(),
                 paged.Page,
                 paged.PageSize,
                 paged.TotalCount,
@@ -109,16 +117,18 @@ public sealed class BooksController : ApiController
 
         return result.Match(
             book => Ok(new BookResponse(
-                book.Id,
-                book.Title,
-                book.Author,
-                book.Category,
-                book.Description,
-                book.CoverImagePath,
-                book.FilePath,
-                book.CreatedAt,
-                book.UpdatedAt,
-                book.IsActive)),
+                book.Book.Id,
+                book.Book.Title,
+                book.Book.Author,
+                book.Book.Category,
+                book.Book.Description,
+                book.Book.CoverImagePath,
+                book.Book.FilePath,
+                book.Book.CreatedAt,
+                book.Book.UpdatedAt,
+                book.Book.IsActive,
+                book.RatingAverage,
+                book.RatingCount)),
             errors => Problem(errors));
     }
 
@@ -132,7 +142,7 @@ public sealed class BooksController : ApiController
             return Problem(result.Errors);
         }
 
-        var book = result.Value;
+        var book = result.Value.Book;
         if (string.IsNullOrWhiteSpace(book.FilePath))
         {
             return Problem(statusCode: StatusCodes.Status404NotFound, title: "Book file is missing.", detail: "Book.FileMissing");

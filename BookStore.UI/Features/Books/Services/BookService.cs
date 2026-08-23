@@ -206,6 +206,43 @@ public sealed class BookService : IBookService
         }
     }
 
+    public async Task<MyBookRatingResponse?> GetBookRatingAsync(Guid bookId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<MyBookRatingResponse>($"api/books/{bookId}/rating", cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<SaveRatingResult> SaveBookRatingAsync(Guid bookId, int rating, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _http.PutAsJsonAsync($"api/books/{bookId}/rating", new SaveBookRatingRequest(rating), cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new SaveRatingResult(true, null);
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new SaveRatingResult(false, "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.", Unauthorized: true);
+            }
+
+            var message = await ReadProblemMessageAsync(response, "ثبت امتیاز ناموفق بود؛ دوباره تلاش کنید.");
+            return new SaveRatingResult(false, message);
+        }
+        catch
+        {
+            return new SaveRatingResult(false, "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
     public async Task<DownloadResult> DownloadBookAsync(Guid bookId, CancellationToken cancellationToken = default)
     {
         try
@@ -270,6 +307,11 @@ public sealed class BookService : IBookService
         if (message == "Book.FileMissing" || message.Contains("file is missing", StringComparison.OrdinalIgnoreCase))
         {
             return "فایل کتاب موجود نیست.";
+        }
+
+        if (message == "TranslationRating.InvalidRating" || message.Contains("must be between 1 and 5", StringComparison.OrdinalIgnoreCase))
+        {
+            return "امتیاز باید بین ۱ تا ۵ باشد.";
         }
 
         return message;

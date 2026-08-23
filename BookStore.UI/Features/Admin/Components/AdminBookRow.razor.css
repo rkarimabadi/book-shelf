@@ -128,6 +128,23 @@
     opacity: 0.7;
 }
 
+.admin-book-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(255, 149, 0, 0.12);
+    color: var(--color-orange);
+    font-size: var(--text-caption1);
+    line-height: 1.5;
+}
+
+.admin-book-rating i {
+    font-size: var(--text-caption1);
+}
+
 .admin-book-date {
     display: inline-flex;
     align-items: center;
