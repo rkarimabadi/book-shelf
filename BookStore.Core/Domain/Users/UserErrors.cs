@@ -56,5 +56,21 @@ public static class UserErrors
 
         public static Error ResetTokenUsed =>
             Error.Validation("User.ResetTokenUsed", "Password reset token has already been used.");
+
+        /// <summary>403 at login: the password was right but the address was never confirmed.</summary>
+        public static Error EmailNotConfirmed =>
+            Error.Forbidden("User.EmailNotConfirmed", "Email address is not confirmed.");
+
+        public static Error EmailAlreadyConfirmed =>
+            Error.Conflict("User.EmailAlreadyConfirmed", "Email address is already confirmed.");
+
+        public static Error InvalidVerificationCode =>
+            Error.Validation("User.InvalidVerificationCode", "Verification code is incorrect.");
+
+        public static Error VerificationCodeExpired =>
+            Error.Validation("User.VerificationCodeExpired", "Verification code has expired.");
+
+        public static Error VerificationCodeResendTooSoon =>
+            Error.Conflict("User.VerificationCodeResendTooSoon", "A verification code was sent recently.");
     }
 }

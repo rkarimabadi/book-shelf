@@ -25,6 +25,19 @@ public class User : AggregateRoot
     /// </summary>
     public bool HasPassword { get; private set; } = true;
 
+    /// <summary>
+    /// Whether the owner proved they read mail at <see cref="Email"/> (by registration code, by
+    /// password reset, or through Google). Unconfirmed accounts cannot sign in. Defaults to true so
+    /// accounts that predate email confirmation keep working.
+    /// </summary>
+    public bool EmailConfirmed { get; private set; } = true;
+
+    // The mailed registration code: only its hash is stored. All null when no code is live.
+    public string? EmailVerificationCodeHash { get; private set; }
+    public DateTime? EmailVerificationCodeIssuedAt { get; private set; }
+    public DateTime? EmailVerificationCodeExpiresAt { get; private set; }
+    public int EmailVerificationFailedAttempts { get; private set; }
+
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
@@ -42,7 +55,8 @@ public class User : AggregateRoot
         string firstName,
         string lastName,
         UserRole role = UserRole.User,
-        bool hasPassword = true)
+        bool hasPassword = true,
+        bool emailConfirmed = true)
     {
         var errors = new List<Error>();
 
@@ -73,7 +87,8 @@ public class User : AggregateRoot
             FirstName = firstName,
             LastName = lastName,
             Role = role,
-            HasPassword = hasPassword
+            HasPassword = hasPassword,
+            EmailConfirmed = emailConfirmed
         };
 
         user.AddDomainEvent(new UserCreatedEvent(user.Id, user.Email, user.FirstName, user.LastName));
@@ -228,6 +243,9 @@ public class User : AggregateRoot
         HasPassword = true;
         resetToken.MarkUsed();
 
+        // The reset link only reached the owner's inbox, so it also proves the address.
+        ClearEmailVerification();
+
         // A changed password invalidates every existing session; force a fresh login.
         foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))
         {
@@ -237,6 +255,136 @@ public class User : AggregateRoot
         AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
 
         return Result.Success;
+    }
+
+    /// <summary>
+    /// Starts (or restarts, once per <see cref="EmailVerificationCodes.ResendInterval"/>) email
+    /// confirmation. Returns the plain code to mail; only its hash is kept.
+    /// </summary>
+    public ErrorOr<string> IssueEmailVerificationCode(DateTime nowUtc)
+    {
+        if (EmailConfirmed)
+        {
+            return UserErrors.Validation.EmailAlreadyConfirmed;
+        }
+
+        if (SecondsUntilNextVerificationCode(nowUtc) > 0)
+        {
+            return UserErrors.Validation.VerificationCodeResendTooSoon;
+        }
+
+        var plain = EmailVerificationCodes.Generate();
+        EmailVerificationCodeHash = EmailVerificationCodes.Hash(Id, plain);
+        EmailVerificationCodeIssuedAt = nowUtc;
+        EmailVerificationCodeExpiresAt = nowUtc + EmailVerificationCodes.Lifetime;
+        EmailVerificationFailedAttempts = 0;
+        return plain;
+    }
+
+    /// <summary>Seconds the owner must still wait before a fresh code may be requested (0 = now).</summary>
+    public int SecondsUntilNextVerificationCode(DateTime nowUtc)
+    {
+        if (EmailConfirmed || EmailVerificationCodeIssuedAt is not { } issuedAt)
+        {
+            return 0;
+        }
+
+        var wait = issuedAt + EmailVerificationCodes.ResendInterval - nowUtc;
+        return wait > TimeSpan.Zero ? (int)Math.Ceiling(wait.TotalSeconds) : 0;
+    }
+
+    /// <summary>The mail could not be sent: drop the code so the owner may ask again right away.</summary>
+    public void WithdrawEmailVerificationCode() => ClearVerificationCodeColumns();
+
+    /// <summary>
+    /// Checks a typed code. A wrong guess is counted (the caller must persist it either way); after
+    /// <see cref="EmailVerificationCodes.MaxFailedAttempts"/> misses the code stops working.
+    /// </summary>
+    public ErrorOr<Success> ConfirmEmail(string? code, DateTime nowUtc)
+    {
+        if (EmailConfirmed)
+        {
+            return Result.Success;
+        }
+
+        if (EmailVerificationCodeHash is null
+            || EmailVerificationCodeExpiresAt is not { } expiresAt
+            || nowUtc >= expiresAt
+            || EmailVerificationFailedAttempts >= EmailVerificationCodes.MaxFailedAttempts)
+        {
+            return UserErrors.Validation.VerificationCodeExpired;
+        }
+
+        var plain = EmailVerificationCodes.Normalize(code);
+        if (plain is null || !EmailVerificationCodes.Matches(Id, plain, EmailVerificationCodeHash))
+        {
+            EmailVerificationFailedAttempts++;
+            return UserErrors.Validation.InvalidVerificationCode;
+        }
+
+        ClearEmailVerification();
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Someone registers again with an address whose first registration was never confirmed. The
+    /// earlier attempt may have been a squatter's (or a mistyped password), so the new details win.
+    /// </summary>
+    public ErrorOr<Success> RestartRegistration(string passwordHash, string firstName, string lastName)
+    {
+        if (EmailConfirmed)
+        {
+            return UserErrors.Validation.EmailAlreadyExists(Email);
+        }
+
+        Guard.Against.NullOrEmpty(passwordHash, nameof(passwordHash));
+        Guard.Against.NullOrEmpty(firstName, nameof(firstName));
+        Guard.Against.NullOrEmpty(lastName, nameof(lastName));
+
+        PasswordHash = passwordHash;
+        FirstName = firstName;
+        LastName = lastName;
+        HasPassword = true;
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// An external provider (Google) vouched for the address. If it was still unconfirmed, whoever
+    /// chose the password never proved they own the inbox (someone may have registered the address
+    /// first to lie in wait), so that password is replaced by an unusable one and its sessions end.
+    /// The owner can set a real one through password reset.
+    /// </summary>
+    public void ConfirmEmailThroughProvider(string unusablePasswordHash)
+    {
+        if (EmailConfirmed)
+        {
+            return;
+        }
+
+        Guard.Against.NullOrEmpty(unusablePasswordHash, nameof(unusablePasswordHash));
+
+        ClearEmailVerification();
+        PasswordHash = unusablePasswordHash;
+        HasPassword = false;
+
+        foreach (var refreshToken in _refreshTokens.Where(rt => !rt.IsRevoked))
+        {
+            refreshToken.Revoke();
+        }
+    }
+
+    private void ClearEmailVerification()
+    {
+        EmailConfirmed = true;
+        ClearVerificationCodeColumns();
+    }
+
+    private void ClearVerificationCodeColumns()
+    {
+        EmailVerificationCodeHash = null;
+        EmailVerificationCodeIssuedAt = null;
+        EmailVerificationCodeExpiresAt = null;
+        EmailVerificationFailedAttempts = 0;
     }
 
     public ErrorOr<Success> ChangePassword(string newPasswordHash)

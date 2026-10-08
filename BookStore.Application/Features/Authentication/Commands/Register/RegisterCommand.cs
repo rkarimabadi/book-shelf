@@ -8,11 +8,18 @@ using MediatR;
 
 namespace BookStore.Application.Features.Authentication.Commands.Register;
 
+/// <summary>
+/// Creates an UNCONFIRMED account and mails it a confirmation code. No session is issued here:
+/// the owner signs in by entering the code (<c>ConfirmEmailCommand</c>).
+/// </summary>
 public record RegisterCommand(
     string Email,
     string Password,
     string FirstName,
-    string LastName) : IRequest<ErrorOr<AuthenticationResult>>;
+    string LastName) : IRequest<ErrorOr<RegisterResult>>;
+
+/// <summary>Where to send the code and how long until another one may be requested.</summary>
+public record RegisterResult(string Email, int ResendAfterSeconds);
 
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
@@ -36,70 +43,73 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     }
 }
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ErrorOr<AuthenticationResult>>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, ErrorOr<RegisterResult>>
 {
     private readonly IAuthenticationService _authenticationService;
+    private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly EmailVerificationMailer _mailer;
     private readonly IUnitOfWork _unitOfWork;
 
     public RegisterCommandHandler(
         IAuthenticationService authenticationService,
+        IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenGenerator jwtTokenGenerator,
+        EmailVerificationMailer mailer,
         IUnitOfWork unitOfWork)
     {
         _authenticationService = authenticationService;
+        _userRepository = userRepository;
         _passwordHasher = passwordHasher;
-        _jwtTokenGenerator = jwtTokenGenerator;
+        _mailer = mailer;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ErrorOr<AuthenticationResult>> Handle(RegisterCommand command, CancellationToken cancellationToken)
+    public async Task<ErrorOr<RegisterResult>> Handle(RegisterCommand command, CancellationToken cancellationToken)
     {
-        await Task.CompletedTask;
-
         var hashedPassword = _passwordHasher.HashPassword(command.Password);
 
-        var registerResult = _authenticationService.RegisterUser(
-            command.Email,
-            hashedPassword,
-            command.FirstName,
-            command.LastName);
-
-        if (registerResult.IsError)
+        User user;
+        var existing = _userRepository.GetByEmail(command.Email);
+        if (existing is not null)
         {
-            return registerResult.Errors;
+            // A confirmed address is taken. An unconfirmed one was never proven by anybody, so a new
+            // registration simply replaces it (otherwise a stranger could lock the real owner out).
+            var restart = existing.RestartRegistration(hashedPassword, command.FirstName, command.LastName);
+            if (restart.IsError)
+            {
+                return restart.Errors;
+            }
+
+            user = existing;
+        }
+        else
+        {
+            var registerResult = _authenticationService.RegisterUser(
+                command.Email,
+                hashedPassword,
+                command.FirstName,
+                command.LastName,
+                emailConfirmed: false);
+
+            if (registerResult.IsError)
+            {
+                return registerResult.Errors;
+            }
+
+            user = registerResult.Value;
         }
 
-        var user = registerResult.Value;
+        // Saves the account and mails the code. If the mail fails the account still exists and the
+        // confirmation page offers to send the code again straight away.
+        var sent = await _mailer.SendAsync(user, cancellationToken);
+        if (sent.IsError)
+        {
+            return sent.Errors;
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var loginResult = _authenticationService.LoginUser(command.Email, hashedPassword);
-        if (loginResult.IsError)
-        {
-            return loginResult.Errors;
-        }
-
-        var (_, refreshToken) = loginResult.Value;
-
-        var token = _jwtTokenGenerator.GenerateToken(
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.Role.ToString());
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return new AuthenticationResult(
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.Role.ToString(),
-            token,
-            refreshToken);
+        return new RegisterResult(user.Email, sent.Value);
     }
 }

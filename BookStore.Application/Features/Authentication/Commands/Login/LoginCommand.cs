@@ -31,13 +31,16 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, ErrorOr<Authent
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly EmailVerificationMailer _mailer;
 
     public LoginCommandHandler(
         IAuthenticationService authenticationService,
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        EmailVerificationMailer mailer)
     {
+        _mailer = mailer;
         _authenticationService = authenticationService;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
@@ -62,6 +65,14 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, ErrorOr<Authent
         var loginResult = _authenticationService.LoginUser(command.Email, userResult.Value.PasswordHash);
         if (loginResult.IsError)
         {
+            if (loginResult.FirstError == UserErrors.Validation.EmailNotConfirmed)
+            {
+                // The password was right but the address was never confirmed (e.g. the code expired
+                // or the person closed the tab). Mail a fresh code if the cooldown allows; the UI then
+                // opens the confirmation page. A failure here must not hide the real answer.
+                await _mailer.SendAsync(userResult.Value, cancellationToken);
+            }
+
             return loginResult.Errors;
         }
 

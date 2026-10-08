@@ -9,7 +9,7 @@
 // Note: full offline boot of a Blazor WASM app would require precaching the entire
 // _framework payload; we intentionally don't, so the app still needs the network once.
 
-const CACHE = 'nun-gerd-v1';
+const CACHE = 'nun-gerd-v2';
 const SHELL = [
     '/',
     '/index.html',

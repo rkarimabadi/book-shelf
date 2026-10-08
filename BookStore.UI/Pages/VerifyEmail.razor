@@ -1,0 +1,153 @@
+@page "/verify-email"
+@implements IDisposable
+@inject IAuthenticationService AuthService
+@inject NavigationManager Nav
+@inject ToastService ToastService
+
+<PageTitle>تأیید ایمیل</PageTitle>
+
+@if (string.IsNullOrWhiteSpace(Email))
+{
+    <ErrorNotice Title="آدرس ایمیل مشخص نیست"
+                 Message="برای تأیید ایمیل، ابتدا ثبت‌نام کنید یا وارد حساب خود شوید."
+                 ShowRetry="false" />
+}
+else
+{
+    <div class="auth-card">
+        <h1 class="auth-title">ایمیل خود را تأیید کنید</h1>
+        <p class="auth-subtitle">کدی ۶ رقمی به <bdi dir="ltr">@Email</bdi> فرستادیم. آن را اینجا وارد کنید.</p>
+
+        <form @onsubmit="HandleConfirm" novalidate>
+            <div class="auth-field">
+                <label for="code">کد تأیید</label>
+                <input id="code" type="text" class="form-control verify-code" dir="ltr" inputmode="numeric"
+                       autocomplete="one-time-code" maxlength="12" @bind="Code" @bind:event="oninput" />
+                @if (!string.IsNullOrEmpty(CodeError))
+                {
+                    <span class="field-error">@CodeError</span>
+                }
+            </div>
+
+            <button type="submit" class="auth-button" disabled="@IsBusy">
+                <i class="bi @(IsBusy ? "bi-arrow-repeat bi-spin" : "bi-patch-check")" aria-hidden="true"></i>
+                @(IsBusy ? "در حال بررسی..." : "تأیید ایمیل")
+            </button>
+        </form>
+
+        <div class="auth-resend">
+            @if (SecondsLeft > 0)
+            {
+                <p class="auth-hint">ارسال دوبارهٔ کد تا @PersianDateFormatter.ToPersianDigits(SecondsLeft.ToString()) ثانیهٔ دیگر ممکن است.</p>
+            }
+            else
+            {
+                <button type="button" class="auth-button-link-plain" disabled="@IsSending" @onclick="HandleResend">
+                    @(IsSending ? "در حال ارسال..." : "ارسال دوبارهٔ کد")
+                </button>
+            }
+
+            <p class="auth-hint">ایمیل را پیدا نمی‌کنید؟ پوشهٔ هرزنامه (Spam) را هم ببینید. کد تا ۳۰ دقیقه معتبر است.</p>
+        </div>
+
+        <p class="auth-switch">
+            ایمیل را اشتباه وارد کرده‌اید؟ <a href="register">دوباره ثبت‌نام کنید</a>
+        </p>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "email")]
+    public string? Email { get; set; }
+
+    [SupplyParameterFromQuery(Name = "wait")]
+    public int? InitialWait { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private string Code = string.Empty;
+    private string? CodeError;
+    private bool IsBusy;
+    private bool IsSending;
+    private int SecondsLeft;
+    private Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        if (InitialWait is > 0)
+        {
+            StartCountdown(InitialWait.Value);
+        }
+    }
+
+    private async Task HandleConfirm()
+    {
+        CodeError = null;
+
+        if (string.IsNullOrWhiteSpace(Code))
+        {
+            CodeError = "کد تأیید را وارد کنید.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var result = await AuthService.ConfirmEmailAsync(Email!.Trim(), Code.Trim());
+            var name = string.IsNullOrWhiteSpace(result.FirstName) ? string.Empty : $"، {result.FirstName}";
+            ToastService.ShowSuccess($"ایمیل شما تأیید شد. خوش آمدید{name}!");
+            Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
+        }
+        catch (Exception ex)
+        {
+            CodeError = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task HandleResend()
+    {
+        IsSending = true;
+        CodeError = null;
+        try
+        {
+            var wait = await AuthService.ResendEmailVerificationAsync(Email!.Trim());
+            if (wait > 0)
+            {
+                StartCountdown(wait);
+                ToastService.ShowSuccess("اگر ایمیل شما در انتظار تأیید باشد، کد تازه برایتان فرستاده شد.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError(ex.Message);
+        }
+        finally
+        {
+            IsSending = false;
+        }
+    }
+
+    private void StartCountdown(int seconds)
+    {
+        _timer?.Dispose();
+        SecondsLeft = seconds;
+        _timer = new Timer(_ => _ = InvokeAsync(() =>
+        {
+            SecondsLeft = Math.Max(0, SecondsLeft - 1);
+            if (SecondsLeft == 0)
+            {
+                _timer?.Dispose();
+                _timer = null;
+            }
+
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

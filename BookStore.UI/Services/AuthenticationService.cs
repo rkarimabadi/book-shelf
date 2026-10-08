@@ -3,9 +3,28 @@ using BookStore.Contracts.Authentication;
 
 namespace BookStore.UI.Services;
 
+/// <summary>Login succeeded password-wise but the address was never confirmed; the UI opens the code page.</summary>
+public sealed class EmailNotConfirmedException : Exception
+{
+    public EmailNotConfirmedException(string email)
+        : base("ایمیل شما هنوز تأیید نشده است؛ کد تأیید را وارد کنید.")
+    {
+        Email = email;
+    }
+
+    public string Email { get; }
+}
+
 public interface IAuthenticationService
 {
-    Task<AuthenticationResponse> RegisterAsync(RegisterRequest request);
+    /// <summary>Creates an unconfirmed account and mails the code. No session yet.</summary>
+    Task<RegisterResponse> RegisterAsync(RegisterRequest request);
+
+    /// <summary>Confirms the address with the mailed code and signs the user in.</summary>
+    Task<AuthenticationResponse> ConfirmEmailAsync(string email, string code);
+
+    /// <summary>Mails a fresh code; returns the seconds until another may be requested.</summary>
+    Task<int> ResendEmailVerificationAsync(string email);
     Task<AuthenticationResponse> LoginAsync(LoginRequest request);
     Task LogoutAsync(string refreshToken);
     Task ForgotPasswordAsync(string email);
@@ -27,9 +46,21 @@ public class AuthenticationService : IAuthenticationService
         _authStateProvider = authStateProvider;
     }
 
-    public async Task<AuthenticationResponse> RegisterAsync(RegisterRequest request)
+    public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync($"{_authUrl}/register", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await ReadErrorAsync(response));
+        }
+
+        return await response.Content.ReadFromJsonAsync<RegisterResponse>()
+            ?? throw new Exception("پاسخ نامعتبر از سرور.");
+    }
+
+    public async Task<AuthenticationResponse> ConfirmEmailAsync(string email, string code)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"{_authUrl}/confirm-email", new ConfirmEmailRequest(email, code));
         if (!response.IsSuccessStatusCode)
         {
             throw new Exception(await ReadErrorAsync(response));
@@ -40,11 +71,37 @@ public class AuthenticationService : IAuthenticationService
         return result;
     }
 
+    public async Task<int> ResendEmailVerificationAsync(string email)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            $"{_authUrl}/resend-email-verification",
+            new ResendEmailVerificationRequest(email));
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(await ReadErrorAsync(response));
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ResendEmailVerificationResponse>();
+        return result?.ResendAfterSeconds ?? 0;
+    }
+
     public async Task<AuthenticationResponse> LoginAsync(LoginRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync($"{_authUrl}/login", request);
         if (!response.IsSuccessStatusCode)
         {
+            // ProblemDetails.detail carries the error code; 403 + this code = unconfirmed address.
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                if (body.Contains("User.EmailNotConfirmed", StringComparison.Ordinal))
+                {
+                    throw new EmailNotConfirmedException(request.Email);
+                }
+
+                throw new Exception(ReadMessage(body, response));
+            }
+
             throw new Exception(await ReadErrorAsync(response));
         }
 
@@ -139,9 +196,11 @@ public class AuthenticationService : IAuthenticationService
 
     private sealed record MeResponse(bool HasPassword);
 
-    private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response) =>
+        ReadMessage(await response.Content.ReadAsStringAsync(), response);
+
+    private static string ReadMessage(string content, HttpResponseMessage response)
     {
-        var content = await response.Content.ReadAsStringAsync();
         var message = ProblemDetailsParser.ReadMessage(content);
         return message is null ? $"درخواست ناموفق بود ({response.StatusCode})." : MapPersian(message);
     }
@@ -180,6 +239,15 @@ public class AuthenticationService : IAuthenticationService
             "UserInactive" => "حساب شما غیرفعال است؛ با پشتیبانی تماس بگیرید.",
             "Refresh token has expired." => "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.",
             "Refresh token has been revoked." => "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.",
+            "Verification code is required." => "کد تأیید را وارد کنید.",
+            "Verification code is incorrect." => "کد تأیید درست نیست.",
+            "User.InvalidVerificationCode" => "کد تأیید درست نیست.",
+            "Verification code has expired." => "این کد دیگر معتبر نیست؛ کد تازه بخواهید.",
+            "User.VerificationCodeExpired" => "این کد دیگر معتبر نیست؛ کد تازه بخواهید.",
+            "Email address is not confirmed." => "ایمیل شما هنوز تأیید نشده است.",
+            "User.EmailNotConfirmed" => "ایمیل شما هنوز تأیید نشده است.",
+            "Email address is already confirmed." => "ایمیل شما قبلاً تأیید شده است؛ وارد شوید.",
+            "User.EmailAlreadyConfirmed" => "ایمیل شما قبلاً تأیید شده است؛ وارد شوید.",
             "Refresh token not found or already revoked." => "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.",
             "User.RefreshTokenExpired" => "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.",
             "User.RefreshTokenRevoked" => "نشست شما منقضی شده است؛ لطفاً دوباره وارد شوید.",

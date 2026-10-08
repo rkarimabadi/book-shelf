@@ -5,8 +5,15 @@ namespace BookStore.Core.Domain.Authentication;
 
 public interface IAuthenticationService
 {
-    ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName, bool hasPassword = true);
+    /// <summary>
+    /// Creates the account. <paramref name="emailConfirmed"/> defaults to true (seed admin, Google);
+    /// password registration passes false so the address must be confirmed by a mailed code first.
+    /// </summary>
+    ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName, bool hasPassword = true, bool emailConfirmed = true);
     ErrorOr<(User User, string RefreshToken)> LoginUser(string email, string passwordHash);
+
+    /// <summary>Signs in an account whose address was just confirmed with the mailed code (no password comparison).</summary>
+    ErrorOr<(User User, string RefreshToken)> LoginConfirmedUser(User user);
 
     /// <summary>
     /// Signs in an already-verified account without a password comparison. Used by

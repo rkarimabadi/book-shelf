@@ -6,6 +6,21 @@ public record RegisterRequest(
     string FirstName,
     string LastName);
 
+/// <summary>Registration creates an unconfirmed account; no tokens until the mailed code is entered.</summary>
+public record RegisterResponse(
+    string Email,
+    int ResendAfterSeconds);
+
+public record ConfirmEmailRequest(
+    string Email,
+    string Code);
+
+public record ResendEmailVerificationRequest(
+    string Email);
+
+public record ResendEmailVerificationResponse(
+    int ResendAfterSeconds);
+
 public record LoginRequest(
     string Email,
     string Password);

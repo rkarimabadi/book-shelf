@@ -126,10 +126,15 @@
         IsBusy = true;
         try
         {
+            // No session yet: the account stays unconfirmed until the mailed code is entered.
             var result = await AuthService.RegisterAsync(new RegisterRequest(Email.Trim(), Password, FirstName.Trim(), LastName.Trim()));
-            var name = string.IsNullOrWhiteSpace(result.FirstName) ? string.Empty : $"، {result.FirstName}";
-            ToastService.ShowSuccess($"ثبت‌نام با موفقیت انجام شد. خوش آمدید{name}!");
-            Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
+            var target = $"verify-email?email={Uri.EscapeDataString(result.Email)}&wait={result.ResendAfterSeconds}";
+            if (ReturnUrl is { } url && url.StartsWith('/'))
+            {
+                target += $"&returnUrl={Uri.EscapeDataString(url)}";
+            }
+
+            Nav.NavigateTo(target);
         }
         catch (Exception ex)
         {

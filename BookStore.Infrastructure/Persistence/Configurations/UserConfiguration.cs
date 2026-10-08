@@ -47,6 +47,22 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasDefaultValue(true);
 
+        // Accounts that predate email confirmation must stay confirmed: the column default is TRUE
+        // (EF would otherwise generate false and lock every existing user out on deploy).
+        builder.Property(u => u.EmailConfirmed)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.Property(u => u.EmailVerificationCodeHash)
+            .HasMaxLength(64);
+
+        builder.Property(u => u.EmailVerificationCodeIssuedAt);
+        builder.Property(u => u.EmailVerificationCodeExpiresAt);
+
+        builder.Property(u => u.EmailVerificationFailedAttempts)
+            .IsRequired()
+            .HasDefaultValue(0);
+
         builder.Metadata.FindNavigation(nameof(User.RefreshTokens))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 

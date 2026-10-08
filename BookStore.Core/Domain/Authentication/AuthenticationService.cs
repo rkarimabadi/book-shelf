@@ -13,7 +13,7 @@ public class AuthenticationService : IAuthenticationService
         _userRepository = userRepository;
     }
 
-    public ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName, bool hasPassword = true)
+    public ErrorOr<User> RegisterUser(string email, string passwordHash, string firstName, string lastName, bool hasPassword = true, bool emailConfirmed = true)
     {
         var existingUser = _userRepository.GetByEmail(email);
         if (existingUser != null)
@@ -24,7 +24,7 @@ public class AuthenticationService : IAuthenticationService
         // hasPassword=false marks Google-created accounts (the hash is a random never-known
         // secret) so the change-password flow lets them SET a password first. Default true
         // keeps password-registered accounts and the SeedAdmin bootstrap unchanged.
-        var userResult = User.Create(email, passwordHash, firstName, lastName, hasPassword: hasPassword);
+        var userResult = User.Create(email, passwordHash, firstName, lastName, hasPassword: hasPassword, emailConfirmed: emailConfirmed);
         if (userResult.IsError)
         {
             return userResult.Errors;
@@ -54,6 +54,12 @@ public class AuthenticationService : IAuthenticationService
             return UserErrors.Validation.UserInactive(email);
         }
 
+        // Checked after the password so the answer never leaks which addresses are registered.
+        if (!user.EmailConfirmed)
+        {
+            return UserErrors.Validation.EmailNotConfirmed;
+        }
+
         var loginResult = user.Login();
         if (loginResult.IsError)
         {
@@ -64,6 +70,35 @@ public class AuthenticationService : IAuthenticationService
         var expiresAt = DateTime.UtcNow.AddDays(7);
 
         var addRefreshTokenResult = user.AddRefreshToken(refreshToken, expiresAt);
+        if (addRefreshTokenResult.IsError)
+        {
+            return addRefreshTokenResult.Errors;
+        }
+
+        _userRepository.Update(user);
+
+        return (user, refreshToken);
+    }
+
+    /// <summary>
+    /// Signs in an account whose address was just confirmed with the mailed code (the code is the
+    /// proof of identity here, so no password is compared).
+    /// </summary>
+    public ErrorOr<(User User, string RefreshToken)> LoginConfirmedUser(User user)
+    {
+        if (!user.IsActive)
+        {
+            return UserErrors.Validation.UserInactive(user.Email);
+        }
+
+        var loginResult = user.Login();
+        if (loginResult.IsError)
+        {
+            return loginResult.Errors;
+        }
+
+        var refreshToken = GenerateRefreshToken();
+        var addRefreshTokenResult = user.AddRefreshToken(refreshToken, DateTime.UtcNow.AddDays(7));
         if (addRefreshTokenResult.IsError)
         {
             return addRefreshTokenResult.Errors;

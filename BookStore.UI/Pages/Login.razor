@@ -101,6 +101,17 @@
             ToastService.ShowSuccess($"خوش آمدید{name}!");
             Nav.NavigateTo(ReturnUrl is { } url && url.StartsWith('/') ? url : "/");
         }
+        catch (EmailNotConfirmedException ex)
+        {
+            // Right password, unconfirmed address: continue on the code page (a fresh code was mailed).
+            var target = $"verify-email?email={Uri.EscapeDataString(ex.Email)}";
+            if (ReturnUrl is { } url && url.StartsWith('/'))
+            {
+                target += $"&returnUrl={Uri.EscapeDataString(url)}";
+            }
+
+            Nav.NavigateTo(target);
+        }
         catch (Exception ex)
         {
             ToastService.ShowError(ex.Message);

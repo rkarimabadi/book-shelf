@@ -74,6 +74,14 @@ public class ExternalLoginCommandHandler : IRequestHandler<ExternalLoginCommand,
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+        else if (!existingUserResult.Value.EmailConfirmed)
+        {
+            // Google vouches for the address. Whoever registered it by password never proved they own
+            // the inbox, so that password is dropped (replaced by an unusable one) and its sessions end.
+            var unusableHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"));
+            existingUserResult.Value.ConfirmEmailThroughProvider(unusableHash);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         // LoginExternalUser re-checks IsActive for existing accounts, so a deactivated
         // user gets UserInactive here instead of a session.

@@ -1,4 +1,5 @@
 using BookStore.Application.Common.Behaviors;
+using BookStore.Application.Features.Authentication.Common;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        services.AddScoped<EmailVerificationMailer>();
 
         return services;
     }

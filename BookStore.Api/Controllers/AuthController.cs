@@ -3,7 +3,9 @@ using System.Security.Claims;
 using BookStore.Api.Common;
 using BookStore.Application.Common.Security;
 using BookStore.Application.Features.Authentication.Commands.ChangePassword;
+using BookStore.Application.Features.Authentication.Commands.ConfirmEmail;
 using BookStore.Application.Features.Authentication.Commands.ExternalLogin;
+using BookStore.Application.Features.Authentication.Commands.ResendEmailVerification;
 using BookStore.Application.Features.Authentication.Commands.ForgotPassword;
 using BookStore.Application.Features.Authentication.Commands.Login;
 using BookStore.Application.Features.Authentication.Commands.Logout;
@@ -173,11 +175,33 @@ public sealed class AuthController : ApiController
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        var command = _mapper.Map<RegisterCommand>(request);
+        var command = new RegisterCommand(request.Email, request.Password, request.FirstName, request.LastName);
         var result = await _sender.Send(command);
 
         return result.Match(
+            registered => Ok(new RegisterResponse(registered.Email, registered.ResendAfterSeconds)),
+            errors => Problem(errors));
+    }
+
+    /// <summary>Confirms the address with the mailed code and signs the user in (returns the token pair).</summary>
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new ConfirmEmailCommand(request.Email, request.Code), cancellationToken);
+
+        return result.Match(
             authResult => Ok(_mapper.Map<AuthenticationResponse>(authResult)),
+            errors => Problem(errors));
+    }
+
+    /// <summary>Mails a fresh code (200 with the wait for the next one; identical for unknown addresses).</summary>
+    [HttpPost("resend-email-verification")]
+    public async Task<IActionResult> ResendEmailVerification(ResendEmailVerificationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new ResendEmailVerificationCommand(request.Email), cancellationToken);
+
+        return result.Match(
+            seconds => Ok(new ResendEmailVerificationResponse(seconds)),
             errors => Problem(errors));
     }
 

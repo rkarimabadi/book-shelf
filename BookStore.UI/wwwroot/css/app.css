@@ -305,6 +305,40 @@ code {
     color: var(--label-secondary);
 }
 
+/* ---------- Email verification code ---------- */
+
+.verify-code {
+    text-align: center;
+    font-size: var(--text-title3, 1.25rem);
+    font-weight: 700;
+    letter-spacing: 0.4em;
+}
+
+.auth-resend {
+    margin-top: var(--space-4);
+    text-align: center;
+}
+
+.auth-hint {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-caption1);
+    color: var(--label-secondary);
+}
+
+.auth-button-link-plain {
+    min-height: var(--tap-min);
+    padding: 0 var(--space-3);
+    background: none;
+    border: 0;
+    color: var(--color-blue);
+    cursor: pointer;
+}
+
+.auth-button-link-plain:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 /* ---------- Google OAuth ---------- */
 
 .google-button {
