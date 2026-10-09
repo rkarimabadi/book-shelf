@@ -454,6 +454,14 @@ Guard.Against.ExpiresInPast(expiresAt, nameof(expiresAt));
 - **Adding a new service call:** route every user-facing error through the service's `MapPersian`/`ReadProblemMessageAsync` — never let a raw English ProblemDetails `title` reach a toast
 - Verified by a full UI sweep + live API sampling of server error strings: build clean (0 warnings / 0 errors)
 
+## Persian Digits Display Status (ارقام فارسی در رابط کاربری)
+
+- **Requirement:** every number the user sees renders with Persian digits (۰–۹), including counts, countdowns, pager labels and server-provided text — not only dates
+- **Mechanism:** `wwwroot/js/persian-digits.js` (loaded in `index.html` right before `blazor.webassembly.js`) converts Latin digits in DOM **text nodes** on load and, via a `MutationObserver`, after every Blazor render. Display only: attributes (`href`, `aria-label`, `placeholder`), input values and URLs are never touched, so API payloads and copied values stay Latin. Chosen over a font swap because the licensed Peyda Standard set has no Persian-digit glyph mapping (the FD variant is a separate product) and over per-page `ToPersianDigits` calls because those miss server text and future pages
+- **Opt-out:** text inside `script/style/textarea/input/select/option/code/pre`, any `dir="ltr"` element, or `data-keep-latin` stays Latin — wrap emails, codes and technical strings in `<bdi dir="ltr">` (as `VerifyEmail.razor` does for the address)
+- **Convention:** you may still use `PersianDateFormatter.ToPersianDigits` for strings built in C# (idempotent with the script); never compare/parse rendered text, only data
+- Verified in the browser: `/verify-email` countdown «۳۹ ثانیه» and «۶ رقمی»/«۳۰ دقیقه» render Persian while the `dir="ltr"` email stays `a1@x.com`; the live countdown keeps converting on each tick
+
 ## Persian Solar Calendar Dates Status
 
 - **Requirement:** every date the user sees must render in the Persian Solar (Jalali) calendar — «۱۴۰۵/۰۵/۲۰», not «2026/08/11»
