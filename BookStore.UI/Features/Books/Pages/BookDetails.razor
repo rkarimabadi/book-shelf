@@ -624,7 +624,7 @@ else
             name = name[33..];
         }
 
-        return string.IsNullOrWhiteSpace(name) ? "book.epub" : name;
+        return string.IsNullOrWhiteSpace(name) ? "book" : name;
     }
 
     private async Task AddToLibraryAsync(bool fromPending = false)

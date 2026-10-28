@@ -180,8 +180,10 @@ public sealed class AdminBookService : IAdminBookService
         // Validation errors surface as FluentValidation messages or ProblemDetails titles/details.
         "Title is required." => "عنوان الزامی است.",
         "Author is required." => "نویسنده الزامی است.",
-        "Book file is required." => "فایل کتاب (EPUB) الزامی است.",
-        "Book.FileRequired" => "فایل کتاب (EPUB) الزامی است.",
+        "Book file is required." => "فایل کتاب (EPUB یا PDF) الزامی است.",
+        "Book.FileRequired" => "فایل کتاب (EPUB یا PDF) الزامی است.",
+        "Book file must be an EPUB or PDF." => "فقط فایل EPUB یا PDF پذیرفته می‌شود.",
+        "Book.InvalidFileType" => "فقط فایل EPUB یا PDF پذیرفته می‌شود.",
         "Category is required." => "دسته‌بندی را انتخاب کنید.",
         "Category is invalid." => "دسته‌بندی معتبر نیست.",
         "Book.InvalidCategory" => "دسته‌بندی معتبر نیست.",

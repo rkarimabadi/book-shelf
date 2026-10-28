@@ -94,7 +94,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-.badge-epub {
+.badge-format {
     background: rgba(0, 122, 255, 0.92);
 }
 

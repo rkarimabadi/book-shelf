@@ -105,7 +105,7 @@
 
         <div class="book-upload">
             <span class="book-upload-label">
-                فایل کتاب (EPUB)
+                فایل کتاب (EPUB یا PDF)
                 @if (Existing is not null)
                 {
                     <small class="book-optional">(اختیاری)</small>
@@ -134,7 +134,7 @@
                     </span>
                 }
             </label>
-            <InputFile id="bookFileInput" class="book-file-input" accept=".epub,application/epub+zip" OnChange="OnBookFileSelected" />
+            <InputFile id="bookFileInput" class="book-file-input" accept="@BookFileFormats.AcceptAttribute" OnChange="OnBookFileSelected" />
             @if (FieldErrors.TryGetValue("File", out var fileError))
             {
                 <span class="book-field-error">@fileError</span>
@@ -270,6 +270,12 @@
             return;
         }
 
+        if (!BookFileFormats.IsAllowed(file.Name))
+        {
+            FieldErrors["File"] = "فقط فایل EPUB یا PDF پذیرفته می‌شود.";
+            return;
+        }
+
         if (file.Size > AdminBookService.BookMaxBytes)
         {
             FieldErrors["File"] = "حجم فایل بیش از حد مجاز است (حداکثر ۲۵ مگابایت).";
@@ -301,7 +307,7 @@
 
         if (Existing is null && _bookFile is null)
         {
-            FieldErrors["File"] = "فایل کتاب (EPUB) الزامی است.";
+            FieldErrors["File"] = "فایل کتاب (EPUB یا PDF) الزامی است.";
         }
 
         if (FieldErrors.Count > 0)
