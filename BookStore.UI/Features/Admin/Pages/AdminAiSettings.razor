@@ -1,0 +1,286 @@
+@page "/admin/ai-settings"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>تنظیمات هوش مصنوعی</PageTitle>
+
+@if (_loadError is not null)
+{
+    <ErrorNotice Title="دریافت تنظیمات ناموفق بود" Message="@_loadError" Retry="LoadAsync" />
+}
+else if (_settings is null)
+{
+    <LoadingSpinner Text="در حال بارگذاری تنظیمات..." />
+}
+else
+{
+    <div class="tool-card">
+        <div class="tool-head">
+            <h1 class="tool-title">تنظیمات سرویس هوش مصنوعی</h1>
+            <p class="tool-subtitle">
+                ابزار ترجمهٔ کتاب با این سرویس کار می‌کند. هر سرویس سازگار با OpenAI (مثل OpenAI، OpenRouter، Groq یا Ollama) یا Anthropic پذیرفته می‌شود.
+            </p>
+        </div>
+
+        <div class="tool-fields">
+            <div class="tool-field">
+                <label for="aiProvider">نوع سرویس‌دهنده</label>
+                <select id="aiProvider" class="tool-input" value="@_provider" @onchange="OnProviderChanged">
+                    <option value="@TranslationValues.ProviderOpenAi">سازگار با OpenAI (Chat Completions)</option>
+                    <option value="@TranslationValues.ProviderAnthropic">Anthropic (Messages API)</option>
+                </select>
+            </div>
+
+            <div class="tool-field">
+                <label for="aiEndpoint">آدرس سرویس (Endpoint)</label>
+                <input id="aiEndpoint" type="url" class="tool-input" dir="ltr" autocomplete="off"
+                       placeholder="@DefaultEndpoint(_provider)"
+                       @bind="_endpoint" @bind:event="oninput" />
+                <span class="tool-hint">مثال: <bdi dir="ltr">@DefaultEndpoint(_provider)</bdi></span>
+                @if (_errors.TryGetValue("Endpoint", out var endpointError))
+                {
+                    <span class="tool-field-error">@endpointError</span>
+                }
+            </div>
+
+            <div class="tool-field">
+                <label for="aiKey">کلید API</label>
+                <input id="aiKey" type="password" class="tool-input" dir="ltr" autocomplete="new-password"
+                       placeholder="@(_settings.HasApiKey ? "برای حفظ کلید فعلی خالی بگذارید" : "sk-…")"
+                       @bind="_apiKey" @bind:event="oninput" />
+                @if (_settings.ApiKeyUnreadable)
+                {
+                    <span class="tool-field-error">کلید ذخیره‌شده دیگر قابل خواندن نیست؛ آن را دوباره وارد کنید.</span>
+                }
+                else if (_settings.HasApiKey)
+                {
+                    <span class="tool-hint">
+                        کلید ذخیره‌شده: <bdi dir="ltr">@_settings.ApiKeyHint</bdi>
+                        <label class="tool-check">
+                            <input type="checkbox" @bind="_clearApiKey" />
+                            حذف کلید ذخیره‌شده
+                        </label>
+                    </span>
+                }
+                else
+                {
+                    <span class="tool-hint">کلید به‌صورت رمزنگاری‌شده ذخیره می‌شود و دیگر نمایش داده نمی‌شود. سرویس محلی (مثل Ollama) کلید لازم ندارد.</span>
+                }
+            </div>
+
+            <div class="tool-field">
+                <label for="aiModel">مدل</label>
+                <input id="aiModel" type="text" class="tool-input" dir="ltr" autocomplete="off"
+                       placeholder="@(_provider == TranslationValues.ProviderAnthropic ? "claude-sonnet-5-5" : "gpt-4.1")"
+                       @bind="_model" @bind:event="oninput" />
+                @if (_errors.TryGetValue("Model", out var modelError))
+                {
+                    <span class="tool-field-error">@modelError</span>
+                }
+            </div>
+
+            <div class="tool-row">
+                <div class="tool-field">
+                    <label for="aiParallel">درخواست‌های هم‌زمان</label>
+                    <input id="aiParallel" type="number" class="tool-input" min="1" max="8" @bind="_parallel" />
+                    <span class="tool-hint">۱ تا ۸ — عدد بیشتر سریع‌تر است ولی ممکن است به محدودیت نرخ سرویس بخورد.</span>
+                </div>
+
+                <div class="tool-field">
+                    <label for="aiChunk">اندازهٔ هر بخش (کلمه)</label>
+                    <input id="aiChunk" type="number" class="tool-input" min="200" max="2000" step="50" @bind="_chunkWords" />
+                    <span class="tool-hint">۲۰۰ تا ۲۰۰۰ — برای مدل‌های کوچک‌تر عدد کمتری بگذارید.</span>
+                </div>
+            </div>
+            @if (_errors.TryGetValue("Numbers", out var numbersError))
+            {
+                <span class="tool-field-error">@numbersError</span>
+            }
+        </div>
+
+        @if (_testReply is not null)
+        {
+            <div class="tool-success" role="status">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>اتصال برقرار است. پاسخ مدل: «@_testReply»</span>
+            </div>
+        }
+
+        <div class="tool-actions">
+            <button type="button" class="tool-btn tool-btn-ghost" disabled="@(_busy || !_settings.Configured)" @onclick="TestAsync"
+                    title="@(_settings.Configured ? "یک درخواست کوتاه با تنظیمات ذخیره‌شده" : "ابتدا تنظیمات را ذخیره کنید")">
+                <i class="bi @(_testing ? "bi-arrow-repeat bi-spin" : "bi-plug")" aria-hidden="true"></i>
+                @(_testing ? "در حال آزمایش..." : "آزمایش اتصال")
+            </button>
+            <button type="button" class="tool-btn tool-btn-primary" disabled="@_busy" @onclick="SaveAsync">
+                <i class="bi @(_saving ? "bi-arrow-repeat bi-spin" : "bi-check-lg")" aria-hidden="true"></i>
+                @(_saving ? "در حال ذخیره..." : "ذخیرهٔ تنظیمات")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject]
+    private IAdminTranslationService TranslationService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
+    private AiSettingsResponse? _settings;
+    private string? _loadError;
+    private string _provider = TranslationValues.ProviderOpenAi;
+    private string _endpoint = string.Empty;
+    private string _model = string.Empty;
+    private string _apiKey = string.Empty;
+    private bool _clearApiKey;
+    private int _parallel = 3;
+    private int _chunkWords = 700;
+    private string? _testReply;
+    private bool _saving;
+    private bool _testing;
+    private readonly Dictionary<string, string> _errors = new();
+
+    private bool _busy => _saving || _testing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loadError = null;
+        _settings = null;
+        var result = await TranslationService.GetSettingsAsync();
+        if (result.Unauthorized)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/ai-settings"));
+            return;
+        }
+
+        if (!result.Success || result.Value is null)
+        {
+            _loadError = result.Message ?? "ارتباط با سرور برقرار نشد؛ لطفاً دوباره تلاش کنید.";
+            return;
+        }
+
+        _settings = result.Value;
+        _provider = _settings.Provider;
+        _endpoint = _settings.Endpoint;
+        _model = _settings.Model;
+        _parallel = _settings.ParallelRequests;
+        _chunkWords = _settings.ChunkWords;
+        _apiKey = string.Empty;
+        _clearApiKey = false;
+    }
+
+    private static string DefaultEndpoint(string provider) =>
+        provider == TranslationValues.ProviderAnthropic
+            ? TranslationValues.DefaultAnthropicEndpoint
+            : TranslationValues.DefaultOpenAiEndpoint;
+
+    private void OnProviderChanged(ChangeEventArgs e)
+    {
+        var previousDefault = DefaultEndpoint(_provider);
+        _provider = e.Value?.ToString() ?? TranslationValues.ProviderOpenAi;
+
+        // Switching provider swaps the default endpoint, but never a custom one the admin typed.
+        if (string.IsNullOrWhiteSpace(_endpoint) || _endpoint.Trim() == previousDefault)
+        {
+            _endpoint = DefaultEndpoint(_provider);
+        }
+    }
+
+    private bool Validate()
+    {
+        _errors.Clear();
+        if (!Uri.TryCreate(_endpoint.Trim(), UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
+        {
+            _errors["Endpoint"] = "آدرس سرویس باید یک نشانی کامل http یا https باشد.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_model))
+        {
+            _errors["Model"] = "نام مدل الزامی است.";
+        }
+
+        if (_parallel is < 1 or > 8 || _chunkWords is < 200 or > 2000)
+        {
+            _errors["Numbers"] = "درخواست‌های هم‌زمان باید بین ۱ تا ۸ و اندازهٔ بخش بین ۲۰۰ تا ۲۰۰۰ کلمه باشد.";
+        }
+
+        return _errors.Count == 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_busy || !Validate())
+        {
+            return;
+        }
+
+        _saving = true;
+        _testReply = null;
+        try
+        {
+            var result = await TranslationService.SaveSettingsAsync(new UpdateAiSettingsRequest(
+                _provider, _endpoint.Trim(), _model.Trim(),
+                string.IsNullOrWhiteSpace(_apiKey) ? null : _apiKey.Trim(),
+                _clearApiKey, _parallel, _chunkWords));
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/ai-settings"));
+                return;
+            }
+
+            if (!result.Success)
+            {
+                ToastService.ShowError(result.Message ?? "ذخیرهٔ تنظیمات ناموفق بود.");
+                return;
+            }
+
+            ToastService.ShowSuccess("تنظیمات هوش مصنوعی ذخیره شد.");
+            await LoadAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task TestAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _testing = true;
+        _testReply = null;
+        try
+        {
+            var result = await TranslationService.TestConnectionAsync();
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/ai-settings"));
+                return;
+            }
+
+            if (!result.Success)
+            {
+                ToastService.ShowError(result.Message ?? "آزمایش اتصال ناموفق بود.");
+                return;
+            }
+
+            _testReply = result.Value;
+        }
+        finally
+        {
+            _testing = false;
+        }
+    }
+}

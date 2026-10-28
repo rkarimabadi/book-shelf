@@ -1,0 +1,155 @@
+@if (Job is not null)
+{
+    var percent = Job.TotalChunks > 0 ? (int)Math.Round(100.0 * Job.CompletedChunks / Job.TotalChunks) : 0;
+
+    <div class="tool-job @StatusClass">
+        <div class="tool-job-icon" aria-hidden="true">
+            <i class="bi @StatusIcon"></i>
+        </div>
+
+        <div class="tool-job-info">
+            <h3 class="tool-job-title">
+                <span class="tool-job-name">@(Job.Title ?? (string.IsNullOrWhiteSpace(Job.SourceTitle) ? Job.OriginalFileName : Job.SourceTitle))</span>
+                <span class="tool-job-badge">@StatusLabel</span>
+            </h3>
+
+            <p class="tool-job-meta">
+                <span><i class="bi bi-file-earmark-text" aria-hidden="true"></i> <bdi dir="ltr">@Job.OriginalFileName</bdi></span>
+                <span><i class="bi bi-fonts" aria-hidden="true"></i> @Job.SourceWords.ToString("N0") کلمه</span>
+                <span><i class="bi bi-magic" aria-hidden="true"></i> @ModeLabel</span>
+                @if (Job.HasCustomCover)
+                {
+                    <span><i class="bi bi-image" aria-hidden="true"></i> جلد جدید</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Job.ModelName))
+                {
+                    <span><i class="bi bi-cpu" aria-hidden="true"></i> <bdi dir="ltr">@Job.ModelName</bdi></span>
+                }
+                <span><i class="bi bi-calendar3" aria-hidden="true"></i> @PersianDateFormatter.Format(Job.CreatedAt)</span>
+            </p>
+
+            @if (Job.Status is TranslationValues.StatusRunning or TranslationValues.StatusQueued)
+            {
+                <div class="tool-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@percent"
+                     aria-label="پیشرفت ترجمه">
+                    <div class="tool-progress-bar" style="width: @(Job.Status == TranslationValues.StatusQueued ? 0 : percent)%"></div>
+                </div>
+                <p class="tool-job-progress-text">
+                    @if (Job.Status == TranslationValues.StatusQueued || Job.TotalChunks == 0)
+                    {
+                        <span>در انتظار شروع…</span>
+                    }
+                    else
+                    {
+                        <span>@Job.CompletedChunks از @Job.TotalChunks بخش (@percent٪)</span>
+                    }
+                </p>
+            }
+
+            @if (Job.Status == TranslationValues.StatusFailed)
+            {
+                <p class="tool-job-error">
+                    <strong>@AdminTranslationService.DescribeJobError(Job.ErrorMessage)</strong>
+                    @if (!string.IsNullOrWhiteSpace(Job.ErrorMessage))
+                    {
+                        <bdi dir="ltr" class="tool-job-error-detail">@Job.ErrorMessage</bdi>
+                    }
+                    @if (Job.CompletedChunks > 0)
+                    {
+                        <span>@Job.CompletedChunks بخش ترجمه‌شده حفظ شده است؛ «تلاش دوباره» از همان‌جا ادامه می‌دهد.</span>
+                    }
+                </p>
+            }
+
+            @if (Job.Status == TranslationValues.StatusCompleted && Job.FallbackChunks > 0)
+            {
+                <p class="tool-job-warning">
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    در @Job.FallbackChunks بخش پاسخ مدل کامل نبود و بخشی از متن یا قالب‌بندی از نسخهٔ اصلی برداشته شد؛ پیش از انتشار آن بخش‌ها را بازبینی کنید.
+                </p>
+            }
+        </div>
+
+        <div class="tool-job-actions">
+            @if (Job.Status == TranslationValues.StatusCompleted)
+            {
+                <button type="button" class="tool-action tool-action-primary" disabled="@Busy" @onclick="OnDownload">
+                    <i class="bi @(Busy ? "bi-arrow-repeat bi-spin" : "bi-download")" aria-hidden="true"></i>
+                    دانلود EPUB فارسی
+                </button>
+            }
+
+            @if (Job.Status is TranslationValues.StatusRunning or TranslationValues.StatusQueued)
+            {
+                <button type="button" class="tool-action tool-action-warning" disabled="@Busy" @onclick="OnCancel">
+                    <i class="bi bi-stop-circle" aria-hidden="true"></i>
+                    توقف
+                </button>
+            }
+
+            @if (Job.Status is TranslationValues.StatusFailed or TranslationValues.StatusCancelled)
+            {
+                <button type="button" class="tool-action tool-action-primary" disabled="@Busy" @onclick="OnRetry">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    تلاش دوباره
+                </button>
+            }
+
+            @if (Job.Status is not (TranslationValues.StatusRunning or TranslationValues.StatusQueued))
+            {
+                <button type="button" class="tool-action tool-action-delete" disabled="@Busy" @onclick="OnDelete">
+                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                    حذف
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public TranslationJobResponse? Job { get; set; }
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback OnDownload { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private string StatusLabel => Job?.Status switch
+    {
+        TranslationValues.StatusQueued => "در صف",
+        TranslationValues.StatusRunning => "در حال ترجمه",
+        TranslationValues.StatusCompleted => "آماده",
+        TranslationValues.StatusFailed => "ناموفق",
+        TranslationValues.StatusCancelled => "متوقف شد",
+        _ => string.Empty
+    };
+
+    private string StatusClass => "is-" + Job?.Status;
+
+    private string StatusIcon => Job?.Status switch
+    {
+        TranslationValues.StatusQueued => "bi-hourglass-split",
+        TranslationValues.StatusRunning => "bi-arrow-repeat bi-spin",
+        TranslationValues.StatusCompleted => "bi-check-circle-fill",
+        TranslationValues.StatusFailed => "bi-x-circle-fill",
+        _ => "bi-pause-circle"
+    };
+
+    private string ModeLabel => Job?.Mode switch
+    {
+        TranslationValues.ModeTranslate => "ترجمه",
+        TranslationValues.ModeEdit => "ویرایش ترجمهٔ ماشینی",
+        _ => "تشخیص خودکار"
+    };
+}

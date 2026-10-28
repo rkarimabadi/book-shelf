@@ -1,6 +1,7 @@
 using BookStore.Application.Common.Interfaces;
 using BookStore.Core.Domain.Authentication;
 using BookStore.Core.Domain.Books;
+using BookStore.Core.Domain.Translation;
 using BookStore.Infrastructure.Authentication;
 using BookStore.Infrastructure.BackgroundJobs;
 using BookStore.Infrastructure.Email;
@@ -8,6 +9,7 @@ using BookStore.Infrastructure.Persistence;
 using BookStore.Infrastructure.Persistence.Interceptors;
 using BookStore.Infrastructure.Persistence.Repositories;
 using BookStore.Infrastructure.Storage;
+using BookStore.Infrastructure.Translation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,25 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(LocalFileStorageOptions.SectionName));
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddScoped<ICoverThumbnailGenerator, CoverThumbnailGenerator>();
+
+        // Admin AI translation tool: provider settings (encrypted key), per-job work folders,
+        // one background worker (implements ITranslationQueue) and the HTTP client for the AI.
+        services.AddScoped<ITranslationJobRepository, TranslationJobRepository>();
+        services.AddScoped<IAiProviderSettingsRepository, AiProviderSettingsRepository>();
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
+        services.AddOptions<TranslationOptions>()
+            .Bind(configuration.GetSection(TranslationOptions.SectionName));
+        services.AddSingleton<TranslationWorkspace>();
+        services.AddSingleton<ITranslationWorkspace>(sp => sp.GetRequiredService<TranslationWorkspace>());
+        services.AddScoped<TranslationPipeline>();
+        services.AddSingleton<TranslationWorker>();
+        services.AddSingleton<ITranslationQueue>(sp => sp.GetRequiredService<TranslationWorker>());
+        services.AddHostedService(sp => sp.GetRequiredService<TranslationWorker>());
+        services.AddHttpClient<IAiTextGenerator, AiTextGenerator>(client =>
+        {
+            // One chunk of a long book can take minutes on a slow model.
+            client.Timeout = TimeSpan.FromMinutes(10);
+        });
 
         services.AddOptions<SmtpSettings>()
             .Bind(configuration.GetSection(SmtpSettings.SectionName));

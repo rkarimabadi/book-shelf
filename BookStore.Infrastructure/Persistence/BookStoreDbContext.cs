@@ -1,4 +1,5 @@
 using BookStore.Core.Domain.Books;
+using BookStore.Core.Domain.Translation;
 using BookStore.Core.Domain.Users;
 using BookStore.Infrastructure.Persistence.Configurations;
 using BookStore.Infrastructure.Persistence.Interceptors;
@@ -23,6 +24,8 @@ public sealed class BookStoreDbContext : DbContext
     public DbSet<BookNote> BookNotes => Set<BookNote>();
     public DbSet<TranslationRating> TranslationRatings => Set<TranslationRating>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<TranslationJob> TranslationJobs => Set<TranslationJob>();
+    public DbSet<AiProviderSettings> AiProviderSettings => Set<AiProviderSettings>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

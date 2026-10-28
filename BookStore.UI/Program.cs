@@ -34,5 +34,6 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IAdminBookService, AdminBookService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IAdminTranslationService, AdminTranslationService>();
 
 await builder.Build().RunAsync();
