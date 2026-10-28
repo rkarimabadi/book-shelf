@@ -36,7 +36,6 @@
     color: #fff;
     font-weight: 700;
     font-size: var(--text-subhead);
-    letter-spacing: 0.5px;
     box-shadow: var(--shadow-sm);
 }
 

@@ -100,7 +100,41 @@ internal sealed class EpubBook
             return TranslationJobErrors.InvalidEpub;
         }
 
+        book.RemoveWatermarks();
+
         return book;
+    }
+
+    // Download-site watermarks pasted between chapters, e.g. OceanofPDF's
+    // <div style="…"><p><a href="https://oceanofpdf.com"><i>OceanofPDF.com</i></a></p></div>.
+    // They are removed before the text is split into chunks, so they are never translated
+    // and never reach the finished book. Wrappers are matched first, then a bare paragraph
+    // or link, then the plain-text mark; each pattern only matches the watermark itself.
+    private const string WatermarkSite = @"(?:www\.)?oceanofpdf\.com";
+    private const string WatermarkLink = "<a\\b[^>]*href\\s*=\\s*[\"']https?://" + WatermarkSite + "[^\"']*[\"'][^>]*>.*?</a\\s*>";
+    private const string WatermarkText = @"(?:<(?:i|em|b|strong|span)\b[^>]*>\s*)*OceanofPDF\.com(?:\s*</(?:i|em|b|strong|span)\s*>)*";
+
+    private static readonly Regex[] WatermarkPatterns =
+    [
+        new(@"<div\b[^>]*>\s*<p\b[^>]*>\s*(?:" + WatermarkLink + "|" + WatermarkText + @")\s*</p\s*>\s*</div\s*>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        new(@"<p\b[^>]*>\s*(?:" + WatermarkLink + "|" + WatermarkText + @")\s*</p\s*>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        new(WatermarkLink, RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+    ];
+
+    /// <summary>Removes known download-site watermarks from every content document.</summary>
+    private void RemoveWatermarks()
+    {
+        foreach (var doc in Documents.Where(d => d.Kind == EpubDocKind.Xhtml))
+        {
+            var content = GetText(doc.Href);
+            var cleaned = WatermarkPatterns.Aggregate(content, (text, pattern) => pattern.Replace(text, string.Empty));
+            if (cleaned != content)
+            {
+                SetText(doc.Href, cleaned);
+            }
+        }
     }
 
     private void ParsePackage()

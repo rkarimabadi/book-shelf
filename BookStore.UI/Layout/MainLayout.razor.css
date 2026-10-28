@@ -136,7 +136,7 @@
     background: var(--color-blue);
     color: #fff;
     font-size: 1rem;
-    margin-right: -5px;
+    margin-inline-start: -5px;
 }
 
 .user-menu-name {
@@ -296,7 +296,7 @@
 
 @media (max-width: 768px) {
     .user-menu-avatar {
-        margin-right: 0;
+        margin-inline-start: 0;
     }
     .app-header {
         gap: var(--space-3);
@@ -389,9 +389,8 @@
     }
 
     .bottom-nav-label {
-        font-size: 10px;
+        font-size: 12px; /* 10px Persian is unreadable; letter-spacing breaks cursive joins */
         font-weight: 600;
-        letter-spacing: 0.02em;
     }
 
     /* Keep page content above the fixed bottom bar. */

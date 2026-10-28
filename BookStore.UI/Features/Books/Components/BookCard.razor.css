@@ -94,12 +94,13 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* Solid token colors: white text on the old 92%-alpha Apple blue/green read at 3.7:1 / 2.2:1. */
 .badge-format {
-    background: rgba(0, 122, 255, 0.92);
+    background: var(--color-blue);
 }
 
 .badge-library {
-    background: rgba(52, 199, 89, 0.92);
+    background: var(--color-green);
 }
 
 /* skeleton shimmer */

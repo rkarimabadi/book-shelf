@@ -117,7 +117,7 @@ The solution follows Clean Architecture principles with Domain-Driven Design:
 - **Design:** brand blue `#007AFF` rounded square (radius 112/512) with a white four-book-on-a-shelf glyph (spine bands in blue) — echoes the header-logo bookshelf and stays legible at 16px. Replaces the old placeholder (brown bars).
 - **Files in `wwwroot/`:** `favicon.svg` (vector master, preferred by modern browsers) · `favicon.ico` (16/32/48/64, legacy fallback) · `favicon.png` (64) · `icon-192.png` / `icon-512.png` (PWA `any`, rounded) · `icon-512-maskable.png` (full-bleed square, glyph scaled to 78% so Android's mask never clips it) · `apple-touch-icon.png` (180, **opaque full-bleed** — iOS applies its own rounding and paints transparency black). All are wired in `index.html` (`<link rel="icon">` ×3 + apple-touch) and `manifest.webmanifest`.
 - **Regenerating:** the PNG/ICO/SVG set is drawn from one geometry (4 books + shelf on a 512 canvas, 4× supersampled with Pillow); to change the look, redraw all files together so they stay consistent. If the brand blue changes, update `theme_color`/`theme-color` metas too.
-- **Cache gotcha:** the service worker caches `/favicon.png` and `/icon-192.png` cache-first, so replacing icons requires bumping `CACHE` in `sw.js` (now `nun-gerd-v2`) or returning visitors keep the old icon.
+- **Cache gotcha:** the service worker caches `/favicon.png` and `/icon-192.png` cache-first, so replacing icons requires bumping `CACHE` in `sw.js` (now `nun-gerd-v3`; bump it for CSS changes too) or returning visitors keep the old icon.
 
 ### Typography & Fonts (Peyda)
 

@@ -152,8 +152,7 @@
     margin-top: var(--space-1);
     font-size: var(--text-caption1);
     color: var(--label-secondary);
-    opacity: 0.8;
-    margin-right: var(--space-2);
+    margin-inline-start: var(--space-2);
 }
 
 .admin-book-date i {

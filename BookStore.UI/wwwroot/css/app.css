@@ -34,17 +34,21 @@
 }
 
 :root {
-    /* system colors */
-    --color-blue: #007AFF;
-    --color-green: #34C759;
-    --color-red: #FF3B30;
-    --color-orange: #FF9500;
+    /* system colors — accessible shades: every one is also used for TEXT (links, badges,
+       action labels) and the blue carries white button text, so each must reach WCAG AA
+       4.5:1 on white (and ≈4.5:1 on --background-grouped). Apple's default palette
+       (#007AFF 4.0:1, #34C759 2.2:1, #FF9500 2.1:1, #FF3B30 3.6:1) does not. The brand
+       blue of the app icon / theme-color stays #007AFF; this is the UI accent only. */
+    --color-blue: #0066D6;
+    --color-green: #1F7A37;
+    --color-red: #D70015;
+    --color-orange: #B25000;
     --color-teal: #5AC8FA;
     --color-indigo: #5856D6;
 
     /* semantic roles - light */
     --label: #000000;
-    --label-secondary: rgba(60, 60, 67, 0.6);
+    --label-secondary: rgba(60, 60, 67, 0.75); /* 5.1:1 on white (0.6 was 3.4:1) */
     --background: #FFFFFF;
     --background-grouped: #F2F2F7;
     --separator: rgba(60, 60, 67, 0.29);
@@ -57,7 +61,7 @@
     --text-headline: 17px;
     --text-body: 17px;
     --text-subhead: 15px;
-    --text-caption1: 12px;
+    --text-caption1: 13px; /* Persian script needs more than 12px to stay legible */
 
     /* Bootstrap components use their own font-stack variables (--bs-body-font-family,
        --bs-btn-font-family; tooltips/popovers read --bs-font-sans-serif directly).
@@ -92,6 +96,13 @@
         --background-grouped: #1C1C1E;
         --separator: rgba(84, 84, 88, 0.6);
         --fill: rgba(120, 120, 128, 0.36);
+
+        /* Apple's dark palette reads well on black; the blue is a touch deeper than
+           #0A84FF so white button text still reaches 4.5:1. */
+        --color-blue: #0070F0;
+        --color-green: #30D158;
+        --color-red: #FF453A;
+        --color-orange: #FF9F0A;
     }
 }
 
@@ -144,7 +155,7 @@ a, .btn-link {
 #blazor-error-ui .dismiss {
     cursor: pointer;
     position: absolute;
-    right: 0.75rem;
+    inset-inline-end: 0.75rem;
     top: 0.5rem;
 }
 
@@ -268,8 +279,14 @@ code {
 
 .auth-links {
     margin: calc(-1 * var(--space-2)) 0 var(--space-4);
-    font-size: var(--text-caption1);
+    font-size: var(--text-subhead);
     text-align: start;
+}
+
+/* A comfortable tap area for the lone «forgot password» link. */
+.auth-links a {
+    display: inline-block;
+    padding-block: var(--space-2);
 }
 
 .auth-button-link {
