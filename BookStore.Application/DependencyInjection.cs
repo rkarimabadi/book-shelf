@@ -1,4 +1,5 @@
 using BookStore.Application.Common.Behaviors;
+using BookStore.Application.Features.AiSettings.Common;
 using BookStore.Application.Features.Authentication.Common;
 using FluentValidation;
 using MediatR;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         services.AddScoped<EmailVerificationMailer>();
+        services.AddScoped<AiConnectionResolver>();
 
         return services;
     }

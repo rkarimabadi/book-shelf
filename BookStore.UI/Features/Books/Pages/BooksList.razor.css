@@ -94,7 +94,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
+    min-height: 40px;
     padding: 0 var(--space-4);
     border: 1px solid var(--separator);
     border-radius: var(--radius-full);
@@ -108,7 +108,7 @@
 
 .filter-chip:hover {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .filter-chip:active {

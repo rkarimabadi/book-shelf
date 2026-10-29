@@ -10,14 +10,16 @@
 }
 else
 {
-    <NavLink class="book-card" href="@($"/books/{Book.Id}{DetailQuery}")">
+    @* A plain <a>, not NavLink: a child component's element never gets this file's CSS
+       scope attribute, so .book-card styles (layout, border, label colour) did not apply. *@
+    <a class="book-card" href="@($"/books/{Book.Id}{DetailQuery}")">
         <div class="details-cover book-card-cover">
             <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" Thumbnail="true" />
-            @if (ShowEpubBadge)
+            @if (ShowFormatBadge && FormatLabel.Length > 0)
             {
-                <span class="book-card-badge badge-epub" title="فایل EPUB">
-                    <i class="bi bi-journal-richtext" aria-hidden="true"></i>
-                    EPUB
+                <span class="book-card-badge badge-format" title="@($"فایل {FormatLabel}")">
+                    <i class="bi @(FormatLabel == "PDF" ? "bi-file-earmark-pdf" : "bi-journal-richtext")" aria-hidden="true"></i>
+                    @FormatLabel
                 </span>
             }
             else if (InLibrary)
@@ -38,7 +40,7 @@ else
                 </p>
             }
         </div>
-    </NavLink>
+    </a>
 }
 
 @code {
@@ -49,9 +51,11 @@ else
     [Parameter]
     public bool Skeleton { get; set; }
 
-    // Shows a small "EPUB" badge on the cover corner (public catalog).
+    // Shows a small file-format badge («EPUB» / «PDF») on the cover corner (public catalog).
     [Parameter]
-    public bool ShowEpubBadge { get; set; }
+    public bool ShowFormatBadge { get; set; }
+
+    private string FormatLabel => BookFileFormats.LabelFor(Book?.FilePath);
 
     // Shows a bookmark badge on the cover corner (user's library).
     [Parameter]

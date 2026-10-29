@@ -27,7 +27,7 @@
 
 .pager-btn:hover:not(:disabled):not(.active) {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .pager-btn:active:not(:disabled):not(.active) {

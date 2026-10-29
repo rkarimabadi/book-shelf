@@ -8,4 +8,10 @@ public interface ICoverThumbnailGenerator
     /// and caching it on first request. Throws <see cref="FileNotFoundException"/> when the cover is missing.
     /// </summary>
     Task<string> GetOrCreateThumbnailAsync(string coverRelativePath, int width, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes every cached thumbnail (all widths) of the cover at <paramref name="coverRelativePath"/>.
+    /// Called when the cover itself is deleted or replaced, so no orphan thumbnails remain.
+    /// </summary>
+    void DeleteThumbnails(string coverRelativePath);
 }

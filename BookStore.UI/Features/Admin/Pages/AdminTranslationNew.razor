@@ -1,0 +1,268 @@
+@page "/admin/translations/new"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>ترجمهٔ کتاب جدید</PageTitle>
+
+<div class="tool-card">
+    <div class="tool-head">
+        <h1 class="tool-title">ترجمه و ویرایش کتاب</h1>
+        <p class="tool-subtitle">
+            فایل EPUB کتاب و در صورت تمایل تصویر جلد فارسی را بدهید؛ کتاب بخش‌به‌بخش با هوش مصنوعی به فارسی روان ترجمه (یا ویرایش) می‌شود
+            و فایل EPUB فارسی با همان ساختار — جلد، تصاویر، فصل‌ها و فهرست — تحویل داده می‌شود.
+        </p>
+    </div>
+
+    @if (_settingsMissing)
+    {
+        <div class="tool-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <span>
+                هنوز سرویس هوش مصنوعی تنظیم نشده است.
+                <a href="admin/ai-settings">تنظیمات هوش مصنوعی</a>
+            </span>
+        </div>
+    }
+
+    <div class="tool-uploads">
+        <div class="tool-upload">
+            <span class="tool-upload-label">فایل کتاب (EPUB)</span>
+            <label class="tool-upload-zone" for="translationBookInput">
+                @if (_bookFile is not null)
+                {
+                    <span class="tool-file-selected">
+                        <i class="bi bi-journal-richtext tool-upload-icon" aria-hidden="true"></i>
+                        <bdi>@_bookFile.Name</bdi>
+                        <small>@FormatSize(_bookFile.Size)</small>
+                    </span>
+                }
+                else
+                {
+                    <span class="tool-upload-placeholder">
+                        <i class="bi bi-journal-richtext tool-upload-icon" aria-hidden="true"></i>
+                        <span>برای انتخاب کلیک کنید</span>
+                        <small>حداکثر ۲۵ مگابایت، بدون قفل DRM</small>
+                    </span>
+                }
+            </label>
+            <InputFile id="translationBookInput" class="tool-file-input" accept=".epub,application/epub+zip" OnChange="OnBookSelected" />
+            @if (_errors.TryGetValue("File", out var fileError))
+            {
+                <span class="tool-field-error">@fileError</span>
+            }
+        </div>
+
+        <div class="tool-upload">
+            <span class="tool-upload-label">تصویر جلد <small class="tool-optional">(اختیاری)</small></span>
+            <label class="tool-upload-zone" for="translationCoverInput">
+                @if (_coverPreviewUrl is not null)
+                {
+                    <img class="tool-cover-preview" src="@_coverPreviewUrl" alt="پیش‌نمایش جلد" />
+                }
+                else
+                {
+                    <span class="tool-upload-placeholder">
+                        <i class="bi bi-image tool-upload-icon" aria-hidden="true"></i>
+                        <span>برای انتخاب کلیک کنید</span>
+                        <small>اگر انتخاب نکنید، جلد اصلی کتاب می‌ماند</small>
+                    </span>
+                }
+            </label>
+            <InputFile id="translationCoverInput" class="tool-file-input" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="OnCoverSelected" />
+            @if (_errors.TryGetValue("Cover", out var coverError))
+            {
+                <span class="tool-field-error">@coverError</span>
+            }
+        </div>
+    </div>
+
+    <div class="tool-fields">
+        <div class="tool-field">
+            <span class="tool-label">نوع کار</span>
+            <div class="tool-modes" role="radiogroup" aria-label="نوع کار">
+                @foreach (var (value, title, hint) in Modes)
+                {
+                    <button type="button"
+                            role="radio"
+                            aria-checked="@(_mode == value ? "true" : "false")"
+                            class="tool-mode @(_mode == value ? "is-selected" : "")"
+                            @onclick="() => _mode = value">
+                        <strong>@title</strong>
+                        <small>@hint</small>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="tool-row">
+            <div class="tool-field">
+                <label for="translationTitle">عنوان فارسی <small class="tool-optional">(اختیاری)</small></label>
+                <input id="translationTitle" type="text" class="tool-input" maxlength="200"
+                       placeholder="خالی بگذارید تا هوش مصنوعی پیشنهاد دهد"
+                       @bind="_title" @bind:event="oninput" />
+            </div>
+
+            <div class="tool-field">
+                <label for="translationAuthor">نام نویسنده به فارسی <small class="tool-optional">(اختیاری)</small></label>
+                <input id="translationAuthor" type="text" class="tool-input" maxlength="100"
+                       @bind="_author" @bind:event="oninput" />
+            </div>
+        </div>
+
+        <div class="tool-field">
+            <label for="translationInstructions">توضیح برای مترجم <small class="tool-optional">(اختیاری)</small></label>
+            <textarea id="translationInstructions" class="tool-input tool-textarea" rows="3" maxlength="2000"
+                      placeholder="مثلاً: نام شخصیت اصلی را «سوفی» بنویس؛ لحن گفت‌وگوها خیلی خودمانی نباشد."
+                      @bind="_instructions" @bind:event="oninput"></textarea>
+        </div>
+    </div>
+
+    <div class="tool-actions">
+        <button type="button" class="tool-btn tool-btn-ghost" disabled="@_busy" @onclick="GoBack">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+            انصراف
+        </button>
+        <button type="button" class="tool-btn tool-btn-primary" disabled="@_busy" @onclick="SubmitAsync">
+            <i class="bi @(_busy ? "bi-arrow-repeat bi-spin" : "bi-translate")" aria-hidden="true"></i>
+            @(_busy ? "در حال بارگذاری..." : "شروع ترجمه")
+        </button>
+    </div>
+</div>
+
+@code {
+    private static readonly (string Value, string Title, string Hint)[] Modes =
+    [
+        (TranslationValues.ModeAuto, "خودکار", "زبان کتاب تشخیص داده می‌شود"),
+        (TranslationValues.ModeTranslate, "ترجمه", "کتاب خارجی → فارسی روان"),
+        (TranslationValues.ModeEdit, "ویرایش", "ترجمهٔ ماشینی فارسی → فارسی روان")
+    ];
+
+    [Inject]
+    private IAdminTranslationService TranslationService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
+    private IBrowserFile? _bookFile;
+    private IBrowserFile? _coverFile;
+    private string? _coverPreviewUrl;
+    private string _mode = TranslationValues.ModeAuto;
+    private string? _title;
+    private string? _author;
+    private string? _instructions;
+    private bool _busy;
+    private bool _settingsMissing;
+    private readonly Dictionary<string, string> _errors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await TranslationService.GetSettingsAsync();
+        if (settings.Unauthorized)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/translations/new"));
+            return;
+        }
+
+        _settingsMissing = settings.Success && settings.Value is { Configured: false };
+    }
+
+    private void GoBack() => Nav.NavigateTo("/admin/translations");
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.#} مگابایت" : $"{Math.Max(1, bytes / 1024)} کیلوبایت";
+
+    private void OnBookSelected(InputFileChangeEventArgs e)
+    {
+        _errors.Remove("File");
+        _bookFile = null;
+        var file = e.File;
+        if (!string.Equals(Path.GetExtension(file.Name), ".epub", StringComparison.OrdinalIgnoreCase))
+        {
+            _errors["File"] = "فقط فایل EPUB پذیرفته می‌شود.";
+            return;
+        }
+
+        if (file.Size > TranslationValues.EpubMaxBytes)
+        {
+            _errors["File"] = "حجم کتاب بیش از ۲۵ مگابایت است.";
+            return;
+        }
+
+        _bookFile = file;
+    }
+
+    private async Task OnCoverSelected(InputFileChangeEventArgs e)
+    {
+        _errors.Remove("Cover");
+        _coverFile = null;
+        _coverPreviewUrl = null;
+        var file = e.File;
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        if (extension is not (".jpg" or ".jpeg" or ".png" or ".webp" or ".gif"))
+        {
+            _errors["Cover"] = "تصویر جلد باید JPG، PNG، WEBP یا GIF باشد.";
+            return;
+        }
+
+        if (file.Size > TranslationValues.CoverMaxBytes)
+        {
+            _errors["Cover"] = "حجم تصویر بیش از ۵ مگابایت است.";
+            return;
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream(TranslationValues.CoverMaxBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            _coverPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer.ToArray())}";
+            _coverFile = file;
+        }
+        catch (Exception)
+        {
+            _errors["Cover"] = "خواندن تصویر ناموفق بود؛ تصویر دیگری انتخاب کنید.";
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        if (_bookFile is null)
+        {
+            _errors["File"] = "فایل EPUB کتاب را انتخاب کنید.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await TranslationService.CreateJobAsync(new TranslationJobSubmit(
+                _bookFile, _coverFile, _title?.Trim(), _author?.Trim(), _mode, _instructions?.Trim()));
+
+            if (result.Unauthorized)
+            {
+                Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/translations/new"));
+                return;
+            }
+
+            if (!result.Success)
+            {
+                ToastService.ShowError(result.Message ?? "شروع ترجمه ناموفق بود.");
+                return;
+            }
+
+            ToastService.ShowSuccess("کتاب بارگذاری شد و ترجمه در پس‌زمینه شروع شد.");
+            Nav.NavigateTo("/admin/translations");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

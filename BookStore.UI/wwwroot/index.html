@@ -47,11 +47,12 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script>
         window.bookstoreDownload = function (bytes, fileName) {
-            const blob = new Blob([bytes], { type: 'application/epub+zip' });
+            const isPdf = /\.pdf$/i.test(fileName || '');
+            const blob = new Blob([bytes], { type: isPdf ? 'application/pdf' : 'application/epub+zip' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = fileName || 'book.epub';
+            a.download = fileName || (isPdf ? 'book.pdf' : 'book.epub');
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

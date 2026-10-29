@@ -1,0 +1,241 @@
+@page "/admin/translations"
+@attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
+
+<PageTitle>ترجمهٔ کتاب</PageTitle>
+
+<div class="tool-header">
+    <div>
+        <h1 class="tool-page-title">ترجمهٔ کتاب با هوش مصنوعی</h1>
+        <p class="tool-subtitle">کتاب EPUB بدهید و نسخهٔ فارسی روان تحویل بگیرید.</p>
+    </div>
+    <div class="tool-header-actions">
+        <a class="tool-btn tool-btn-ghost tool-btn-inline" href="admin/ai-settings">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            تنظیمات
+        </a>
+        <a class="tool-btn tool-btn-primary tool-btn-inline" href="admin/translations/new">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            ترجمهٔ جدید
+        </a>
+    </div>
+</div>
+
+@if (_error is not null)
+{
+    <ErrorNotice Title="دریافت فهرست ترجمه‌ها ناموفق بود" Message="@_error" Retry="LoadAsync" />
+}
+else if (_jobs is null)
+{
+    <LoadingSpinner Text="در حال بارگذاری..." />
+}
+else if (_jobs.Count == 0)
+{
+    <EmptyState Title="هنوز کتابی ترجمه نشده است"
+                Message="اولین کتاب EPUB را بارگذاری کنید تا ترجمهٔ آن در پس‌زمینه شروع شود."
+                Icon="bi bi-translate">
+        <Action>
+            <a class="btn btn-primary" href="admin/translations/new">ترجمهٔ جدید</a>
+        </Action>
+    </EmptyState>
+}
+else
+{
+    <div class="tool-job-list">
+        @foreach (var job in _jobs)
+        {
+            <TranslationJobRow @key="job.Id"
+                               Job="job"
+                               Busy="_busyId == job.Id"
+                               OnDownload="() => DownloadAsync(job)"
+                               OnCancel="() => CancelAsync(job)"
+                               OnRetry="() => RetryAsync(job)"
+                               OnDelete="() => _deleteTarget = job" />
+        }
+    </div>
+}
+
+@if (_deleteTarget is not null)
+{
+    <ConfirmDialog Visible="true"
+                   Title="حذف ترجمه"
+                   Message="@($"ترجمهٔ «{_deleteTarget.Title ?? _deleteTarget.SourceTitle}» و همهٔ فایل‌هایش حذف شود؟ این عمل قابل بازگشت نیست.")"
+                   ConfirmText="حذف"
+                   BusyText="در حال حذف..."
+                   IsBusy="_busyId == _deleteTarget.Id"
+                   OnConfirm="ConfirmDeleteAsync"
+                   OnCancel="() => _deleteTarget = null" />
+}
+
+@code {
+    // While a job is queued or running the list refreshes itself.
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(4);
+
+    [Inject]
+    private IAdminTranslationService TranslationService { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    [Inject]
+    private ToastService ToastService { get; set; } = default!;
+
+    private IReadOnlyList<TranslationJobResponse>? _jobs;
+    private string? _error;
+    private Guid? _busyId;
+    private TranslationJobResponse? _deleteTarget;
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _disposed = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _ = PollAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await TranslationService.GetJobsAsync(_disposed.Token);
+        if (result.Unauthorized)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/translations"));
+            return;
+        }
+
+        if (!result.Success)
+        {
+            // Keep showing the last list if a background refresh fails.
+            _error = _jobs is null ? result.Message : null;
+            return;
+        }
+
+        _error = null;
+        _jobs = result.Value;
+    }
+
+    private async Task PollAsync()
+    {
+        _timer = new PeriodicTimer(PollInterval);
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(_disposed.Token))
+            {
+                if (_jobs?.Any(IsActive) == true && _busyId is null)
+                {
+                    await LoadAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private static bool IsActive(TranslationJobResponse job) =>
+        job.Status is TranslationValues.StatusQueued or TranslationValues.StatusRunning;
+
+    private Task CancelAsync(TranslationJobResponse job) =>
+        RunAsync(job, TranslationService.CancelJobAsync, "ترجمه متوقف شد.");
+
+    private Task RetryAsync(TranslationJobResponse job) =>
+        RunAsync(job, TranslationService.RetryJobAsync, "ترجمه دوباره در صف قرار گرفت؛ بخش‌های ترجمه‌شده حفظ می‌شوند.");
+
+    private async Task RunAsync(
+        TranslationJobResponse job,
+        Func<Guid, CancellationToken, Task<AdminTranslationResult<bool>>> action,
+        string successMessage)
+    {
+        if (_busyId is not null)
+        {
+            return;
+        }
+
+        _busyId = job.Id;
+        try
+        {
+            var result = await action(job.Id, _disposed.Token);
+            if (!HandleFailure(result))
+            {
+                ToastService.ShowSuccess(successMessage);
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private async Task DownloadAsync(TranslationJobResponse job)
+    {
+        if (_busyId is not null)
+        {
+            return;
+        }
+
+        _busyId = job.Id;
+        try
+        {
+            var result = await TranslationService.DownloadAsync(job, _disposed.Token);
+            if (!HandleFailure(result))
+            {
+                ToastService.ShowSuccess("دانلود کتاب ترجمه‌شده شروع شد.");
+            }
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_deleteTarget is null || _busyId is not null)
+        {
+            return;
+        }
+
+        var target = _deleteTarget;
+        _busyId = target.Id;
+        try
+        {
+            var result = await TranslationService.DeleteJobAsync(target.Id, _disposed.Token);
+            if (!HandleFailure(result))
+            {
+                ToastService.ShowSuccess("ترجمه حذف شد.");
+                _deleteTarget = null;
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busyId = null;
+        }
+    }
+
+    /// <summary>True when the call failed (and the user has been told or redirected).</summary>
+    private bool HandleFailure<T>(AdminTranslationResult<T> result)
+    {
+        if (result.Success)
+        {
+            return false;
+        }
+
+        if (result.Unauthorized)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/admin/translations"));
+            return true;
+        }
+
+        ToastService.ShowError(result.Message ?? "عملیات ناموفق بود؛ دوباره تلاش کنید.");
+        return true;
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _timer?.Dispose();
+        _disposed.Dispose();
+    }
+}

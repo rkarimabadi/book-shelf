@@ -132,6 +132,12 @@ public sealed class BooksController : ApiController
             errors => Problem(errors));
     }
 
+    private IActionResult InvalidFileType() =>
+        Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Book file must be an EPUB or PDF.",
+            detail: "Book.InvalidFileType");
+
     [HttpGet("{id:guid}/download")]
     [Authorize(Policy = Policies.RequireUserRole)]
     public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
@@ -154,7 +160,7 @@ public sealed class BooksController : ApiController
             return Problem(statusCode: StatusCodes.Status404NotFound, title: "Book file is missing.", detail: "Book.FileMissing");
         }
 
-        return PhysicalFile(fullPath, "application/epub+zip", Path.GetFileName(book.FilePath));
+        return PhysicalFile(fullPath, BookFileFormats.ContentTypeFor(book.FilePath), Path.GetFileName(book.FilePath));
     }
 
     [HttpPost]
@@ -168,15 +174,20 @@ public sealed class BooksController : ApiController
         string coverImagePath = string.Empty;
         string filePath = string.Empty;
 
+        if (file is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Book file is required.", detail: "Book.FileRequired");
+        }
+
+        if (!BookFileFormats.IsAllowed(file.FileName))
+        {
+            return InvalidFileType();
+        }
+
         if (coverImage is not null)
         {
             await using var stream = coverImage.OpenReadStream();
             coverImagePath = await _fileStorage.SaveAsync(stream, coverImage.FileName, "covers", cancellationToken);
-        }
-
-        if (file is null)
-        {
-            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Book file is required.", detail: "Book.FileRequired");
         }
 
         await using var fileStream = file.OpenReadStream();
@@ -221,6 +232,11 @@ public sealed class BooksController : ApiController
     {
         string? coverImagePath = null;
         string? filePath = null;
+
+        if (file is not null && !BookFileFormats.IsAllowed(file.FileName))
+        {
+            return InvalidFileType();
+        }
 
         if (coverImage is not null)
         {

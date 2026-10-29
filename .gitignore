@@ -31,3 +31,6 @@ appsettings.Production.json
 /publish.zip
 /BookStore.Api/wwwroot/uploads
 /BookStore-publish.zip
+
+# Translation tool work folders (uploaded EPUBs, chunk results)
+App_Data/

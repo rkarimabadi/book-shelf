@@ -2,6 +2,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
+    min-height: var(--tap-min);
     margin-bottom: var(--space-4);
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-md);
@@ -12,7 +13,7 @@
 }
 
 .details-back:hover {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: var(--fill);
 }
 
@@ -111,7 +112,7 @@
 
 .book-action-download:hover {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .book-action-remove {
@@ -289,6 +290,11 @@
 }
 
 .details-rate-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
     border: none;
     background: transparent;
     padding: 4px;

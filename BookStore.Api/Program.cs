@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.DataProtection;
 using BookStore.Infrastructure.Authentication;
 using BookStore.Infrastructure.Persistence;
 using BookStore.Infrastructure.Storage;
+using BookStore.Infrastructure.Translation;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -43,6 +44,14 @@ if (!string.IsNullOrWhiteSpace(fileStorageRoot) && !Path.IsPathRooted(fileStorag
 {
     builder.Configuration[$"{LocalFileStorageOptions.SectionName}:RootPath"] =
         Path.GetFullPath(fileStorageRoot, builder.Environment.ContentRootPath);
+}
+
+// The translation tool's private work folders (uploaded EPUBs, chunk results) — same anchoring.
+var translationWorkRoot = builder.Configuration[$"{TranslationOptions.SectionName}:WorkRoot"];
+if (!string.IsNullOrWhiteSpace(translationWorkRoot) && !Path.IsPathRooted(translationWorkRoot))
+{
+    builder.Configuration[$"{TranslationOptions.SectionName}:WorkRoot"] =
+        Path.GetFullPath(translationWorkRoot, builder.Environment.ContentRootPath);
 }
 
 builder.Services.AddApplication();

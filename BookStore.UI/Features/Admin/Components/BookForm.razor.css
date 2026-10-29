@@ -102,7 +102,7 @@
 
 .book-optional {
     color: var(--label-secondary);
-    opacity: 0.7;
+    font-size: inherit;
 }
 
 .book-upload-zone {
@@ -159,7 +159,10 @@
     text-align: center;
 }
 
-.book-file-input {
+/* InputFile is a child component: its <input> does not carry this file's scope attribute,
+   so the rule must go through ::deep (a plain .book-file-input never matched and the
+   native file picker showed under each upload zone). */
+.book-upload ::deep .book-file-input {
     display: none;
 }
 

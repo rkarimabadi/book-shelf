@@ -36,7 +36,6 @@
     color: #fff;
     font-weight: 700;
     font-size: var(--text-subhead);
-    letter-spacing: 0.5px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -121,7 +120,6 @@
     margin-top: var(--space-1);
     font-size: var(--text-caption1);
     color: var(--label-secondary);
-    opacity: 0.8;
 }
 
 .admin-user-date i {
@@ -150,7 +148,7 @@
 
 .admin-role-badge.role-admin {
     background: rgba(0, 122, 255, 0.12);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .admin-role-badge.role-user {
@@ -189,7 +187,7 @@
 
 .row-menu-trigger:hover {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .row-menu-trigger:active {
@@ -198,7 +196,7 @@
 
 .row-menu-trigger[aria-expanded="true"] {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: var(--fill);
 }
 

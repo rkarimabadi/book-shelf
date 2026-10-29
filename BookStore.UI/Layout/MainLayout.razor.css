@@ -59,7 +59,7 @@
 }
 
 .app-nav ::deep a.active {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: rgba(0, 122, 255, 0.1);
     font-weight: 600;
 }
@@ -74,7 +74,7 @@
 }
 
 .app-auth ::deep a.app-link {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     text-decoration: none;
     min-height: var(--tap-min);
     display: inline-flex;
@@ -136,7 +136,7 @@
     background: var(--color-blue);
     color: #fff;
     font-size: 1rem;
-    margin-right: -5px;
+    margin-inline-start: -5px;
 }
 
 .user-menu-name {
@@ -271,10 +271,17 @@
     background: var(--fill);
 }
 
+/* Segmented-control look: blue text on a blue tint over the grey strip was 4.2:1. */
 .admin-nav ::deep a.active {
-    color: var(--color-blue);
-    background: rgba(0, 122, 255, 0.12);
+    color: var(--color-blue-text);
+    background: var(--background);
+    box-shadow: var(--shadow-sm);
     font-weight: 600;
+}
+
+/* Short admin-tab label, shown only on phones (see the mobile block). */
+.admin-nav-short {
+    display: none;
 }
 
 /* ---------- content ---------- */
@@ -296,7 +303,7 @@
 
 @media (max-width: 768px) {
     .user-menu-avatar {
-        margin-right: 0;
+        margin-inline-start: 0;
     }
     .app-header {
         gap: var(--space-3);
@@ -333,8 +340,30 @@
     }
 
     /* Admin strip stays as-is (visible below the header on every screen). */
+    /* Phones: the three tabs must fit 375px without a scrollbar — drop the «مدیریت»/«ٔ کتاب»
+       words (the strip itself says it is the admin area) and spread the tabs evenly. */
     .admin-nav {
-        padding: var(--space-1) var(--space-3);
+        padding: var(--space-1) var(--space-2);
+        gap: var(--space-1);
+        scrollbar-width: none;
+    }
+
+    .admin-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .admin-nav ::deep a {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 0 var(--space-2);
+    }
+
+    .admin-nav-prefix {
+        display: none;
+    }
+
+    .admin-nav-short {
+        display: inline;
     }
 
     /* Bottom navigation bar (mirrors .app-nav; hidden on desktop via the base rule).
@@ -380,18 +409,17 @@
     }
 
         .bottom-nav ::deep a.bottom-nav-item:hover {
-            color: var(--color-blue);
+            color: var(--color-blue-text);
         }
 
     /* Active tab: iOS-style accent tint on icon + label (no tinted background). */
     .bottom-nav ::deep a.bottom-nav-item.active {
-        color: var(--color-blue);
+        color: var(--color-blue-text);
     }
 
     .bottom-nav-label {
-        font-size: 10px;
+        font-size: 12px; /* 10px Persian is unreadable; letter-spacing breaks cursive joins */
         font-weight: 600;
-        letter-spacing: 0.02em;
     }
 
     /* Keep page content above the fixed bottom bar. */

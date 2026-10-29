@@ -24,10 +24,7 @@ public sealed class CoverThumbnailGenerator : ICoverThumbnailGenerator
             throw new FileNotFoundException("Cover file is missing.", originalPath);
         }
 
-        var thumbPath = Path.Combine(
-            Path.GetDirectoryName(originalPath)!,
-            ThumbSubDirectory,
-            $"{Path.GetFileName(originalPath)}.w{width}.webp");
+        var thumbPath = Path.Combine(ThumbDirectory(originalPath), $"{Path.GetFileName(originalPath)}.w{width}.webp");
 
         if (File.Exists(thumbPath))
         {
@@ -46,4 +43,23 @@ public sealed class CoverThumbnailGenerator : ICoverThumbnailGenerator
         await image.SaveAsWebpAsync(thumbPath, new WebpEncoder { Quality = 82 }, cancellationToken);
         return thumbPath;
     }
+
+    public void DeleteThumbnails(string coverRelativePath)
+    {
+        var originalPath = _fileStorage.GetFullPath(coverRelativePath);
+        var directory = ThumbDirectory(originalPath);
+        if (!Directory.Exists(directory))
+        {
+            return;
+        }
+
+        // "<cover file name>.w<width>.webp" — one file per width that was ever requested.
+        foreach (var thumb in Directory.EnumerateFiles(directory, $"{Path.GetFileName(originalPath)}.w*.webp"))
+        {
+            File.Delete(thumb);
+        }
+    }
+
+    private static string ThumbDirectory(string originalPath) =>
+        Path.Combine(Path.GetDirectoryName(originalPath)!, ThumbSubDirectory);
 }
