@@ -26,4 +26,30 @@ internal static class FileCleanup
             logger.LogWarning(ex, "Failed to delete uploaded file '{RelativePath}' ({Context}).", relativePath, context);
         }
     }
+
+    /// <summary>Deletes a cover image and its cached thumbnails (best effort, like the file itself).</summary>
+    public static async Task DeleteCoverAsync(
+        IFileStorage fileStorage,
+        ICoverThumbnailGenerator thumbnails,
+        ILogger logger,
+        string? relativePath,
+        string context,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+        {
+            return;
+        }
+
+        try
+        {
+            thumbnails.DeleteThumbnails(relativePath);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to delete the thumbnails of cover '{RelativePath}' ({Context}).", relativePath, context);
+        }
+
+        await DeleteIfExistsAsync(fileStorage, logger, relativePath, context, cancellationToken);
+    }
 }

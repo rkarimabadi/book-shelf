@@ -13,7 +13,7 @@
 }
 
 .details-back:hover {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: var(--fill);
 }
 
@@ -112,7 +112,7 @@
 
 .book-action-download:hover {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .book-action-remove {

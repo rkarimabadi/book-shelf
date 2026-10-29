@@ -40,6 +40,10 @@
        (#007AFF 4.0:1, #34C759 2.2:1, #FF9500 2.1:1, #FF3B30 3.6:1) does not. The brand
        blue of the app icon / theme-color stays #007AFF; this is the UI accent only. */
     --color-blue: #0066D6;
+    /* Blue used as TEXT (links, active tabs, outline actions). Same as --color-blue in light
+       mode; dark mode lightens it, because the fill blue must stay deep for white button
+       text while blue text on dark surfaces needs a lighter shade. */
+    --color-blue-text: var(--color-blue);
     --color-green: #1F7A37;
     --color-red: #D70015;
     --color-orange: #B25000;
@@ -91,7 +95,7 @@
 @media (prefers-color-scheme: dark) {
     :root {
         --label: #FFFFFF;
-        --label-secondary: rgba(235, 235, 245, 0.6);
+        --label-secondary: rgba(235, 235, 245, 0.7); /* 0.6 fell to 4.4:1 on --fill pills over cards */
         --background: #000000;
         --background-grouped: #1C1C1E;
         --separator: rgba(84, 84, 88, 0.6);
@@ -100,6 +104,7 @@
         /* Apple's dark palette reads well on black; the blue is a touch deeper than
            #0A84FF so white button text still reaches 4.5:1. */
         --color-blue: #0070F0;
+        --color-blue-text: #409CFF; /* 7.4:1 on black, 6.0:1 on #1C1C1E */
         --color-green: #30D158;
         --color-red: #FF453A;
         --color-orange: #FF9F0A;
@@ -119,7 +124,7 @@ h1:focus {
 }
 
 a, .btn-link {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .btn-primary {
@@ -349,7 +354,7 @@ code {
     padding: 0 var(--space-3);
     background: none;
     border: 0;
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     cursor: pointer;
 }
 
@@ -759,7 +764,7 @@ code {
     font-size: 1.35rem;
 }
 
-.tool-job.is-running .tool-job-icon { color: var(--color-blue); background: rgba(0, 122, 255, 0.12); }
+.tool-job.is-running .tool-job-icon { color: var(--color-blue-text); background: rgba(0, 122, 255, 0.12); }
 .tool-job.is-completed .tool-job-icon { color: var(--color-green); background: rgba(52, 199, 89, 0.14); }
 .tool-job.is-failed .tool-job-icon { color: var(--color-red); background: rgba(255, 59, 48, 0.12); }
 .tool-job.is-queued .tool-job-icon { color: var(--color-orange); background: rgba(255, 149, 0, 0.14); }
@@ -795,7 +800,7 @@ code {
 
 .tool-job.is-completed .tool-job-badge { background: rgba(52, 199, 89, 0.14); color: var(--color-green); }
 .tool-job.is-failed .tool-job-badge { background: rgba(255, 59, 48, 0.12); color: var(--color-red); }
-.tool-job.is-running .tool-job-badge { background: rgba(0, 122, 255, 0.12); color: var(--color-blue); }
+.tool-job.is-running .tool-job-badge { background: rgba(0, 122, 255, 0.12); color: var(--color-blue-text); }
 
 .tool-job-meta {
     display: flex;

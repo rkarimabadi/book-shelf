@@ -59,7 +59,7 @@
 }
 
 .app-nav ::deep a.active {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: rgba(0, 122, 255, 0.1);
     font-weight: 600;
 }
@@ -74,7 +74,7 @@
 }
 
 .app-auth ::deep a.app-link {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     text-decoration: none;
     min-height: var(--tap-min);
     display: inline-flex;
@@ -273,7 +273,7 @@
 
 /* Segmented-control look: blue text on a blue tint over the grey strip was 4.2:1. */
 .admin-nav ::deep a.active {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: var(--background);
     box-shadow: var(--shadow-sm);
     font-weight: 600;
@@ -409,12 +409,12 @@
     }
 
         .bottom-nav ::deep a.bottom-nav-item:hover {
-            color: var(--color-blue);
+            color: var(--color-blue-text);
         }
 
     /* Active tab: iOS-style accent tint on icon + label (no tinted background). */
     .bottom-nav ::deep a.bottom-nav-item.active {
-        color: var(--color-blue);
+        color: var(--color-blue-text);
     }
 
     .bottom-nav-label {

@@ -43,17 +43,20 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
     private readonly IBookRepository _bookRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IFileStorage _fileStorage;
+    private readonly ICoverThumbnailGenerator _thumbnails;
     private readonly ILogger<UpdateBookCommandHandler> _logger;
 
     public UpdateBookCommandHandler(
         IBookRepository bookRepository,
         IUnitOfWork unitOfWork,
         IFileStorage fileStorage,
+        ICoverThumbnailGenerator thumbnails,
         ILogger<UpdateBookCommandHandler> logger)
     {
         _bookRepository = bookRepository;
         _unitOfWork = unitOfWork;
         _fileStorage = fileStorage;
+        _thumbnails = thumbnails;
         _logger = logger;
     }
 
@@ -87,7 +90,7 @@ public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Error
 
         if (command.CoverImagePath is not null && !string.IsNullOrWhiteSpace(oldCoverImagePath) && oldCoverImagePath != command.CoverImagePath)
         {
-            await FileCleanup.DeleteIfExistsAsync(_fileStorage, _logger, oldCoverImagePath, "book cover replacement", cancellationToken);
+            await FileCleanup.DeleteCoverAsync(_fileStorage, _thumbnails, _logger, oldCoverImagePath, "book cover replacement", cancellationToken);
         }
 
         if (command.FilePath is not null && !string.IsNullOrWhiteSpace(oldFilePath) && oldFilePath != command.FilePath)

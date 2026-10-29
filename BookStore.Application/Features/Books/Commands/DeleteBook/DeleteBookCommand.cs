@@ -14,17 +14,20 @@ public class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Error
     private readonly IBookRepository _bookRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IFileStorage _fileStorage;
+    private readonly ICoverThumbnailGenerator _thumbnails;
     private readonly ILogger<DeleteBookCommandHandler> _logger;
 
     public DeleteBookCommandHandler(
         IBookRepository bookRepository,
         IUnitOfWork unitOfWork,
         IFileStorage fileStorage,
+        ICoverThumbnailGenerator thumbnails,
         ILogger<DeleteBookCommandHandler> logger)
     {
         _bookRepository = bookRepository;
         _unitOfWork = unitOfWork;
         _fileStorage = fileStorage;
+        _thumbnails = thumbnails;
         _logger = logger;
     }
 
@@ -42,7 +45,7 @@ public class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Error
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await FileCleanup.DeleteIfExistsAsync(_fileStorage, _logger, book.CoverImagePath, "book deletion", cancellationToken);
+        await FileCleanup.DeleteCoverAsync(_fileStorage, _thumbnails, _logger, book.CoverImagePath, "book deletion", cancellationToken);
         await FileCleanup.DeleteIfExistsAsync(_fileStorage, _logger, book.FilePath, "book deletion", cancellationToken);
 
         return Result.Success;

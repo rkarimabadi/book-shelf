@@ -148,7 +148,7 @@
 
 .admin-role-badge.role-admin {
     background: rgba(0, 122, 255, 0.12);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .admin-role-badge.role-user {
@@ -187,7 +187,7 @@
 
 .row-menu-trigger:hover {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .row-menu-trigger:active {
@@ -196,7 +196,7 @@
 
 .row-menu-trigger[aria-expanded="true"] {
     border-color: var(--color-blue);
-    color: var(--color-blue);
+    color: var(--color-blue-text);
     background: var(--fill);
 }
 

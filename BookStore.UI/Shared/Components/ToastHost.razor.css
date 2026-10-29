@@ -59,7 +59,7 @@
 }
 
 .toast-info > i {
-    color: var(--color-blue);
+    color: var(--color-blue-text);
 }
 
 .toast-close {
