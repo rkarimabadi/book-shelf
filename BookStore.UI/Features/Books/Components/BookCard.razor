@@ -10,7 +10,9 @@
 }
 else
 {
-    <NavLink class="book-card" href="@($"/books/{Book.Id}{DetailQuery}")">
+    @* A plain <a>, not NavLink: a child component's element never gets this file's CSS
+       scope attribute, so .book-card styles (layout, border, label colour) did not apply. *@
+    <a class="book-card" href="@($"/books/{Book.Id}{DetailQuery}")">
         <div class="details-cover book-card-cover">
             <BookCover Path="@Book.CoverImagePath" Alt="Book.Title" Thumbnail="true" />
             @if (ShowFormatBadge && FormatLabel.Length > 0)
@@ -38,7 +40,7 @@ else
                 </p>
             }
         </div>
-    </NavLink>
+    </a>
 }
 
 @code {

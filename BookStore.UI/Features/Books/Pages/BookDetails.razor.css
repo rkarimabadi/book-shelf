@@ -290,6 +290,11 @@
 }
 
 .details-rate-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
     border: none;
     background: transparent;
     padding: 4px;

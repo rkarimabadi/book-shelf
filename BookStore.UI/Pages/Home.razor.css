@@ -338,6 +338,11 @@
 /* ---------- mobile: full-width CTAs for thumb reach ---------- */
 
 @media (max-width: 768px) {
+    /* The desktop top padding (up to 6rem) left ~120px of empty space above the badge on phones. */
+    .hero {
+        padding-block: var(--space-4) var(--space-6);
+    }
+
     .hero-cta,
     .home-cta-button {
         width: 100%;

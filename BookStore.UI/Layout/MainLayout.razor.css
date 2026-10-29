@@ -271,10 +271,17 @@
     background: var(--fill);
 }
 
+/* Segmented-control look: blue text on a blue tint over the grey strip was 4.2:1. */
 .admin-nav ::deep a.active {
     color: var(--color-blue);
-    background: rgba(0, 122, 255, 0.12);
+    background: var(--background);
+    box-shadow: var(--shadow-sm);
     font-weight: 600;
+}
+
+/* Short admin-tab label, shown only on phones (see the mobile block). */
+.admin-nav-short {
+    display: none;
 }
 
 /* ---------- content ---------- */
@@ -333,8 +340,30 @@
     }
 
     /* Admin strip stays as-is (visible below the header on every screen). */
+    /* Phones: the three tabs must fit 375px without a scrollbar — drop the «مدیریت»/«ٔ کتاب»
+       words (the strip itself says it is the admin area) and spread the tabs evenly. */
     .admin-nav {
-        padding: var(--space-1) var(--space-3);
+        padding: var(--space-1) var(--space-2);
+        gap: var(--space-1);
+        scrollbar-width: none;
+    }
+
+    .admin-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .admin-nav ::deep a {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 0 var(--space-2);
+    }
+
+    .admin-nav-prefix {
+        display: none;
+    }
+
+    .admin-nav-short {
+        display: inline;
     }
 
     /* Bottom navigation bar (mirrors .app-nav; hidden on desktop via the base rule).

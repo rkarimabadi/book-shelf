@@ -43,12 +43,12 @@
     --color-green: #1F7A37;
     --color-red: #D70015;
     --color-orange: #B25000;
-    --color-teal: #5AC8FA;
+    --color-teal: #00738F;   /* #5AC8FA carried white text at 1.9:1 (note «ذخیره» button) */
     --color-indigo: #5856D6;
 
     /* semantic roles - light */
     --label: #000000;
-    --label-secondary: rgba(60, 60, 67, 0.75); /* 5.1:1 on white (0.6 was 3.4:1) */
+    --label-secondary: rgba(60, 60, 67, 0.8); /* 6.0:1 on white, ≥4.5:1 on --fill pills (0.6 was 3.4:1) */
     --background: #FFFFFF;
     --background-grouped: #F2F2F7;
     --separator: rgba(60, 60, 67, 0.29);
@@ -103,6 +103,8 @@
         --color-green: #30D158;
         --color-red: #FF453A;
         --color-orange: #FF9F0A;
+        --color-teal: #0B80A3;   /* ≥4.5:1 both as text on black and under white text */
+        --color-indigo: #7D7AFF; /* text only */
     }
 }
 
@@ -491,7 +493,8 @@ code {
 }
 
 .tool-optional {
-    opacity: 0.7;
+    color: var(--label-secondary);
+    font-size: inherit;
 }
 
 .tool-input {

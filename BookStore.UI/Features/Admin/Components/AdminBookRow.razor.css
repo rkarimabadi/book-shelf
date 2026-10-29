@@ -193,7 +193,7 @@
 }
 
 .admin-action-edit {
-    background: var(--fill);
+    background: var(--background-grouped); /* blue on --fill was 4.3:1 */
     color: var(--color-blue);
 }
 
